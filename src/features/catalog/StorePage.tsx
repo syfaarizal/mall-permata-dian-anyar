@@ -5,6 +5,7 @@ import { Notice, Spinner, cx } from '../../components/ui'
 import { cartActions, useCart } from '../cart/cartStore'
 import { qtyOf, totalItems } from '../cart/cartLogic'
 import { Photo, StatusPill, coverOf } from './components'
+import { MinusIcon, PlusIcon } from '../../components/icons'
 import { useStoreBySlug, useStoreProducts } from './hooks'
 import type { Product } from '../../lib/types'
 
@@ -14,12 +15,12 @@ function Stepper({ product, storeId }: { product: Product; storeId: string }) {
   if (qty === 0) {
     return <button type="button" onClick={() => cartActions.add(product.id, storeId)} className="inline-flex min-h-11 flex-none items-center justify-center rounded-xl bg-marun-700 px-4 font-bold text-emas-300">Tambah</button>
   }
-  const btn = 'inline-flex size-11 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none'
+  const btn = 'inline-flex size-11 flex-none items-center justify-center rounded-xl border border-garis bg-white text-tinta'
   return (
     <div className="flex flex-none items-center gap-2">
-      <button type="button" aria-label="Kurangi" className={btn} onClick={() => cartActions.setQty(product.id, qty - 1)}>−</button>
+      <button type="button" aria-label="Kurangi" className={btn} onClick={() => cartActions.setQty(product.id, qty - 1)}><MinusIcon className="size-5" /></button>
       <span className="w-6 shrink-0 text-center font-bold">{qty}</span>
-      <button type="button" aria-label="Tambah" className={btn} onClick={() => cartActions.setQty(product.id, qty + 1)}>+</button>
+      <button type="button" aria-label="Tambah" className={btn} onClick={() => cartActions.setQty(product.id, qty + 1)}><PlusIcon className="size-5" /></button>
     </div>
   )
 }

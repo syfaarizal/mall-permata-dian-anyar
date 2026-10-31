@@ -5,6 +5,7 @@ import { useStoreStatus } from '../../lib/now'
 import { Notice, Spinner } from '../../components/ui'
 import { cartActions, useCart } from '../cart/cartStore'
 import { qtyOf } from '../cart/cartLogic'
+import { MinusIcon, PlusIcon } from '../../components/icons'
 import { Photo, StatusPill } from './components'
 import { useProductDetail } from './hooks'
 
@@ -137,18 +138,18 @@ export default function ProductSheet() {
                     type="button"
                     aria-label="Kurangi"
                     onClick={() => cartActions.setQty(p.id, qty - 1)}
-                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none"
+                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-tinta"
                   >
-                    −
+                    <MinusIcon className="size-5" />
                   </button>
                   <span className="w-8 shrink-0 text-center text-lg font-bold">{qty}</span>
                   <button
                     type="button"
                     aria-label="Tambah"
                     onClick={() => cartActions.setQty(p.id, qty + 1)}
-                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none"
+                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-tinta"
                   >
-                    +
+                    <PlusIcon className="size-5" />
                   </button>
                 </div>
                 <Link to="/keranjang" className="inline-flex items-center justify-center rounded-xl bg-marun-700 px-4 py-3 font-bold text-emas-300">

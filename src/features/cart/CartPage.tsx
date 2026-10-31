@@ -10,6 +10,7 @@ import { useCartProducts } from '../catalog/hooks'
 import type { ProductWithStore } from '../catalog/api'
 import { cartActions, useCart } from './cartStore'
 import { resolvePayment } from './cartLogic'
+import { MinusIcon, PlusIcon } from '../../components/icons'
 
 export default function CartPage() {
   const { profile } = useAuth()
@@ -72,9 +73,9 @@ export default function CartPage() {
                   {(!product || !product.is_available) && <p className="text-xs font-bold text-bahaya">{product ? 'Habis' : 'Sudah tidak dijual'} · hapus dulu</p>}
                 </div>
                 <div className="flex flex-none items-center gap-1.5">
-                  <button type="button" aria-label="Kurangi" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-xl font-bold leading-none" onClick={() => cartActions.setQty(line.productId, line.qty - 1)}>−</button>
+                  <button type="button" aria-label="Kurangi" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-tinta" onClick={() => cartActions.setQty(line.productId, line.qty - 1)}><MinusIcon className="size-5" /></button>
                   <span className="w-6 shrink-0 text-center font-bold">{line.qty}</span>
-                  <button type="button" aria-label="Tambah" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-xl font-bold leading-none" onClick={() => cartActions.setQty(line.productId, line.qty + 1)}>+</button>
+                  <button type="button" aria-label="Tambah" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-tinta" onClick={() => cartActions.setQty(line.productId, line.qty + 1)}><PlusIcon className="size-5" /></button>
                 </div>
               </div>
             ))}

@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router'
 import { cx } from '../../components/ui'
+import { PlusIcon } from '../../components/icons'
 import { formatRupiah } from '../../lib/format'
 import { useStoreStatus } from '../../lib/now'
 import type { Product, Store } from '../../lib/types'
@@ -49,9 +50,9 @@ export function AddButton({ product, store }: { product: Product; store: Store }
       type="button"
       aria-label={`Tambah ${product.name} ke keranjang`}
       onClick={() => cartActions.add(product.id, store.id)}
-      className="inline-flex size-11 flex-none items-center justify-center rounded-full bg-marun-700 text-2xl font-bold leading-none text-emas-300"
+      className="inline-flex size-11 flex-none items-center justify-center rounded-full bg-marun-700 text-emas-300"
     >
-      +
+      <PlusIcon className="size-5" />
     </button>
   )
 }
