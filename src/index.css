@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+/* Satu-satunya tempat warna tema. Ganti di sini, seluruh UI ikut berubah. */
+@theme {
+  --color-marun-900: #4a0510;
+  --color-marun-700: #6e0a18;
+  --color-marun-50: #fbf0f1;
+  --color-emas-100: #f8ebc9;
+  --color-emas-300: #f3d58a;
+  --color-emas-500: #b8862b;
+  --color-krem: #fbf7ef;
+  --color-garis: #e8dcc3;
+  --color-tinta: #2a0d12;
+  --color-tinta-lembut: #6b5a50;
+  --color-ok: #0f5a39;
+  --color-peringatan: #7a5200;
+  --color-bahaya: #a12b2b;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body { background: var(--color-krem); color: var(--color-tinta); font-family: var(--font-sans); }
