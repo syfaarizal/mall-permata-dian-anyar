@@ -50,9 +50,9 @@ export default function AdminTeamTab() {
               </div>
               {!locked && (
                 <div className="grid grid-cols-3 gap-2">
-                  <Toggle pressed={a.admin_role === 'community'} disabled={change.isPending} className="px-1 text-xs" onClick={() => change.mutate({ id: a.id, r: 'community' })}>Komunitas</Toggle>
-                  <Toggle pressed={a.admin_role === 'operations'} disabled={change.isPending} className="px-1 text-xs" onClick={() => change.mutate({ id: a.id, r: 'operations' })}>Operasional</Toggle>
-                  <Button variant="danger" className="px-1 text-xs" disabled={change.isPending} onClick={() => window.confirm(`Cabut peran admin ${a.name}?`) && change.mutate({ id: a.id, r: null })}>Cabut</Button>
+                  <Toggle pressed={a.admin_role === 'community'} disabled={change.isPending} className="min-w-0 px-1! text-xs" onClick={() => change.mutate({ id: a.id, r: 'community' })}>Komunitas</Toggle>
+                  <Toggle pressed={a.admin_role === 'operations'} disabled={change.isPending} className="min-w-0 px-1! text-xs" onClick={() => change.mutate({ id: a.id, r: 'operations' })}>Operasional</Toggle>
+                  <Button variant="danger" className="min-w-0 px-1! text-xs" disabled={change.isPending} onClick={() => window.confirm(`Cabut peran admin ${a.name}?`) && change.mutate({ id: a.id, r: null })}>Cabut</Button>
                 </div>
               )}
             </div>
@@ -70,7 +70,7 @@ export default function AdminTeamTab() {
         {candidates.map((u) => (
           <div key={u.id} className="flex items-center justify-between gap-3">
             <p className="min-w-0 flex-1 truncate"><span className="font-semibold">{u.name}</span> <span className="text-sm text-tinta-lembut">· {formatPhoneDisplay(u.wa_number)}</span></p>
-            <Button className="px-3" disabled={change.isPending} onClick={() => window.confirm(`Jadikan ${u.name} ${ROLE_LABEL[role]}?`) && change.mutate({ id: u.id, r: role })}>Jadikan</Button>
+            <Button className="px-3!" disabled={change.isPending} onClick={() => window.confirm(`Jadikan ${u.name} ${ROLE_LABEL[role]}?`) && change.mutate({ id: u.id, r: role })}>Jadikan</Button>
           </div>
         ))}
       </Card>

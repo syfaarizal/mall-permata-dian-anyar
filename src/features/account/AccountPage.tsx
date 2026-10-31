@@ -58,7 +58,7 @@ export default function AccountPage() {
           <Button type="submit" disabled={busy}>Simpan alamat</Button>
         </Card>
       </form>
-      <Link to="/ganti-pin" className="min-h-12 rounded-xl border border-garis bg-white px-4 py-3 text-center font-bold">Ganti PIN</Link>
+      <Link to="/ganti-pin" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-4 text-center font-bold">Ganti PIN</Link>
       <Button variant="ghost" onClick={signOut}>Keluar</Button>
     </div>
   )

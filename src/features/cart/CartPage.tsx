@@ -23,7 +23,7 @@ export default function CartPage() {
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold text-marun-700">Keranjang</h1>
         <Notice>Keranjangmu kosong.</Notice>
-        <Link to="/" className="min-h-12 rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300">Cari makanan</Link>
+        <Link to="/" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-marun-700 px-4 text-center font-bold text-emas-300">Cari makanan</Link>
       </div>
     )
   }
@@ -71,10 +71,10 @@ export default function CartPage() {
                   {product && <p className="text-xs text-tinta-lembut">{formatRupiah(product.price)} / {product.unit}</p>}
                   {(!product || !product.is_available) && <p className="text-xs font-bold text-bahaya">{product ? 'Habis' : 'Sudah tidak dijual'} · hapus dulu</p>}
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <button type="button" aria-label="Kurangi" className="size-11 rounded-xl border border-garis text-xl font-bold" onClick={() => cartActions.setQty(line.productId, line.qty - 1)}>−</button>
-                  <span className="w-6 text-center font-bold">{line.qty}</span>
-                  <button type="button" aria-label="Tambah" className="size-11 rounded-xl border border-garis text-xl font-bold" onClick={() => cartActions.setQty(line.productId, line.qty + 1)}>+</button>
+                <div className="flex flex-none items-center gap-1.5">
+                  <button type="button" aria-label="Kurangi" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-xl font-bold leading-none" onClick={() => cartActions.setQty(line.productId, line.qty - 1)}>−</button>
+                  <span className="w-6 shrink-0 text-center font-bold">{line.qty}</span>
+                  <button type="button" aria-label="Tambah" className="inline-flex size-11 items-center justify-center rounded-xl border border-garis text-xl font-bold leading-none" onClick={() => cartActions.setQty(line.productId, line.qty + 1)}>+</button>
                 </div>
               </div>
             ))}

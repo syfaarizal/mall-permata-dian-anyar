@@ -1,6 +1,6 @@
 import { Navigate, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
-import { Toggle } from '../../components/ui'
+import { Toggle, cx } from '../../components/ui'
 import { can, ROLE_LABEL } from '../../lib/permissions'
 import AdminStoresTab from './AdminStoresTab'
 import AdminUsersTab from './AdminUsersTab'
@@ -28,8 +28,14 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold text-marun-700">Panel admin</h1>
         <p className="text-sm text-tinta-lembut">{ROLE_LABEL[role]}</p>
       </div>
-      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
-        {tabs.map((t) => <Toggle key={t.id} className="px-1 text-sm" pressed={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}>{t.label}</Toggle>)}
+      {/* Tab memakai grid supaya label panjang ("Pengguna", "Pengaturan") tetap
+          muat di layar 360px dan tiap tab sama lebar. */}
+      <div className={cx('grid gap-2', tabs.length === 3 ? 'grid-cols-3' : 'grid-cols-2')}>
+        {tabs.map((t) => (
+          <Toggle key={t.id} className="min-w-0 px-2! text-sm" pressed={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}>
+            {t.label}
+          </Toggle>
+        ))}
       </div>
       {tab === 'toko' && <AdminStoresTab />}
       {tab === 'pengguna' && <AdminUsersTab />}

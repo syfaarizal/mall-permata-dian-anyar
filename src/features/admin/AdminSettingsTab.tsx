@@ -47,7 +47,7 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
         <Field label="Kode undangan" error={errors.invite_code} hint="Bagikan lewat grup WhatsApp. Ganti kalau bocor ke orang luar.">
           <div className="flex gap-2">
             <input className={inputCls} value={code} onChange={(e) => setCode(e.target.value)} />
-            <Button type="button" variant="ghost" className="flex-none px-3" onClick={() => setCode(generateInviteCode())}>Acak</Button>
+            <Button type="button" variant="ghost" className="flex-none px-3!" onClick={() => setCode(generateInviteCode())}>Acak</Button>
           </div>
         </Field>
         <div className="flex items-center justify-between gap-3">

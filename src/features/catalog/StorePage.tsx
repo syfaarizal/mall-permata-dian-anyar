@@ -12,13 +12,13 @@ function Stepper({ product, storeId }: { product: Product; storeId: string }) {
   const cart = useCart()
   const qty = qtyOf(cart, product.id)
   if (qty === 0) {
-    return <button type="button" onClick={() => cartActions.add(product.id, storeId)} className="min-h-11 rounded-xl bg-marun-700 px-4 font-bold text-emas-300">Tambah</button>
+    return <button type="button" onClick={() => cartActions.add(product.id, storeId)} className="inline-flex min-h-11 flex-none items-center justify-center rounded-xl bg-marun-700 px-4 font-bold text-emas-300">Tambah</button>
   }
-  const btn = 'size-11 rounded-xl border border-garis bg-white text-xl font-bold'
+  const btn = 'inline-flex size-11 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none'
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-none items-center gap-2">
       <button type="button" aria-label="Kurangi" className={btn} onClick={() => cartActions.setQty(product.id, qty - 1)}>−</button>
-      <span className="w-6 text-center font-bold">{qty}</span>
+      <span className="w-6 shrink-0 text-center font-bold">{qty}</span>
       <button type="button" aria-label="Tambah" className={btn} onClick={() => cartActions.setQty(product.id, qty + 1)}>+</button>
     </div>
   )
@@ -44,8 +44,8 @@ export default function StorePage() {
         <StatusPill store={s} className="absolute left-5 top-3" />
       </div>
       <div>
-        <h1 className="text-2xl font-bold text-marun-700">{s.name}</h1>
-        <p className="text-sm text-tinta-lembut">{[s.block_info, s.delivery_area_note && `Antar: ${s.delivery_area_note}`].filter(Boolean).join(' · ')}</p>
+        <h1 className="truncate text-2xl font-bold text-marun-700">{s.name}</h1>
+        <p className="truncate text-sm text-tinta-lembut">{[s.block_info, s.delivery_area_note && `Antar: ${s.delivery_area_note}`].filter(Boolean).join(' · ')}</p>
         <div className="mt-2 flex gap-1.5 text-xs font-semibold">
           {s.accept_cash && <span className="rounded-md bg-emas-100 px-2 py-0.5">Cash</span>}
           {s.accept_qris && <span className="rounded-md bg-emas-100 px-2 py-0.5">QRIS</span>}
@@ -67,9 +67,9 @@ export default function StorePage() {
               <Photo src={p.image_url} className="size-20 flex-none rounded-xl" />
             </Link>
             <Link to={`produk/${p.id}`} className="min-w-0 flex-1">
-              <p className="font-bold">{p.name}</p>
+              <p className="truncate font-bold">{p.name}</p>
               {p.description && <p className="line-clamp-2 text-xs text-tinta-lembut">{p.description}</p>}
-              <p className="text-sm font-bold">{formatRupiah(p.price)} / {p.unit}</p>
+              <p className="truncate text-sm font-bold">{formatRupiah(p.price)} / {p.unit}</p>
             </Link>
             {p.is_available ? (status.canOrder ? <Stepper product={p} storeId={s.id} /> : null) : (
               <Link to={`/?q=${encodeURIComponent(p.name)}`} className="text-xs font-bold text-marun-700 underline">Habis — cari di toko lain</Link>
@@ -78,7 +78,7 @@ export default function StorePage() {
         ))}
       </ul>
       {mine.length > 0 && (
-        <Link to="/keranjang" className="fixed inset-x-5 bottom-24 z-10 mx-auto max-w-md rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300 shadow-lg">
+        <Link to="/keranjang" className="fixed inset-x-5 bottom-24 z-10 mx-auto inline-flex max-w-md items-center justify-center rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300 shadow-lg">
           Lihat keranjang · {totalItems({ ...cart, lines: mine })} item · {formatRupiah(subtotal)}
         </Link>
       )}

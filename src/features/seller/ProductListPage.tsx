@@ -63,7 +63,7 @@ export default function ProductListPage() {
           </li>
         ))}
       </ul>
-      <Link to="/jual/produk/baru" className="sticky bottom-24 min-h-12 rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300">+ Tambah produk</Link>
+      <Link to="/jual/produk/baru" className="sticky bottom-24 inline-flex min-h-12 items-center justify-center rounded-xl bg-marun-700 px-4 text-center font-bold text-emas-300">+ Tambah produk</Link>
     </div>
   )
 }

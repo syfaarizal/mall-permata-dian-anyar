@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Notice, inputCls } from '../../components/ui'
+import { Button, Card, Notice, cx, inputCls } from '../../components/ui'
 import { addCategory, deleteCategory, renameCategory } from './api'
 import { friendlyError } from './logic'
 import { useCatalogCategories } from '../catalog/hooks'
@@ -12,10 +12,12 @@ function Row({ c, onError, onDone }: { c: Category; onError: (m: string) => void
   const rename = useMutation({ mutationFn: () => renameCategory(c.id, name.trim()), ...opts })
   const del = useMutation({ mutationFn: () => deleteCategory(c.id), ...opts })
   return (
-    <div className="flex items-center gap-2">
-      <input className={inputCls} aria-label={`Nama kategori ${c.name}`} value={name} onChange={(e) => setName(e.target.value)} />
-      <Button variant="ghost" className="px-3" disabled={rename.isPending || name.trim().length < 2 || name.trim() === c.name} onClick={() => rename.mutate()}>Simpan</Button>
-      <Button variant="danger" className="px-3" disabled={del.isPending} onClick={() => window.confirm(`Hapus kategori "${c.name}"?`) && del.mutate()}>Hapus</Button>
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <input className={cx(inputCls, 'min-w-0 flex-1')} aria-label={`Nama kategori ${c.name}`} value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="flex gap-2">
+        <Button variant="ghost" className="min-w-0 flex-1 px-3!" disabled={rename.isPending || name.trim().length < 2 || name.trim() === c.name} onClick={() => rename.mutate()}>Simpan</Button>
+        <Button variant="danger" className="min-w-0 flex-1 px-3!" disabled={del.isPending} onClick={() => window.confirm(`Hapus kategori "${c.name}"?`) && del.mutate()}>Hapus</Button>
+      </div>
     </div>
   )
 }
@@ -40,7 +42,7 @@ export default function CategoryManager() {
       {parents.map((p) => (
         <div key={p.id} className="flex flex-col gap-2 rounded-xl bg-krem p-2">
           <Row c={p} onError={setError} onDone={done} />
-          <div className="ml-4 flex flex-col gap-2">{(data ?? []).filter((c) => c.parent_id === p.id).map((c) => <Row key={c.id} c={c} onError={setError} onDone={done} />)}</div>
+          <div className="flex flex-col gap-2 pl-4">{(data ?? []).filter((c) => c.parent_id === p.id).map((c) => <Row key={c.id} c={c} onError={setError} onDone={done} />)}</div>
         </div>
       ))}
       <div className="flex flex-col gap-2 border-t border-garis pt-3">

@@ -120,8 +120,14 @@ function StoreForm({ store, profile, categories }: { store: Store | null; profil
           <div className="flex-1"><Field label="Tutup"><input type="time" className={inputCls} value={v.close_time} onChange={(e) => set('close_time', e.target.value)} /></Field></div>
         </div>
         {errors.open_time && <p role="alert" className="text-xs font-semibold text-bahaya">{errors.open_time}</p>}
-        <div className="grid grid-cols-7 gap-1.5">
-          {DAYS.map((d) => <Toggle key={d.n} className="px-0 text-sm" pressed={v.open_days.includes(d.n)} onClick={() => toggleDay(d.n)}>{d.label}</Toggle>)}
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-semibold">Hari buka</span>
+          <div className="grid grid-cols-7 gap-1.5">
+            {DAYS.map((d) => (
+              <Toggle key={d.n} className="min-w-0 px-0! text-sm" pressed={v.open_days.includes(d.n)} onClick={() => toggleDay(d.n)}>{d.label}</Toggle>
+            ))}
+          </div>
+          <p className="text-xs text-tinta-lembut">Ketuk hari yang tokomu buka. Minimal satu hari.</p>
         </div>
         {errors.open_days && <p role="alert" className="text-xs font-semibold text-bahaya">{errors.open_days}</p>}
       </Card>

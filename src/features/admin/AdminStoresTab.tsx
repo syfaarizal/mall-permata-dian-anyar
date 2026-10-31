@@ -33,7 +33,7 @@ function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void; 
         <span className={`flex-none text-xs font-bold ${verified ? 'text-ok' : 'text-peringatan'}`}>{verified ? 'Nomor terverifikasi ✓' : 'Nomor belum terverifikasi'}</span>
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {chat && <a href={chat} target="_blank" rel="noreferrer" className="min-h-12 rounded-xl border border-garis bg-white px-3 py-3 text-center font-bold">Chat via WA</a>}
+        {chat && <a href={chat} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-3 text-center font-bold">Chat via WA</a>}
         {!verified && s.owner && <Button variant="ghost" disabled={busy} onClick={() => verify.mutate()}>Verifikasi nomor</Button>}
         {s.approval_status !== 'approved' && <Button disabled={busy || !verified} onClick={() => approval.mutate('approved')}>Setujui</Button>}
         {s.approval_status === 'pending' && <Button variant="danger" disabled={busy} onClick={() => approval.mutate('rejected')}>Tolak</Button>}
@@ -54,7 +54,7 @@ export default function AdminStoresTab() {
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-2">
-        {FILTERS.map((f) => <Toggle key={f.id} className="px-1 text-xs" pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.id === 'pending' ? `${f.label} (${pendingCount})` : f.label}</Toggle>)}
+        {FILTERS.map((f) => <Toggle key={f.id} className="min-w-0 px-1! text-xs" pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.id === 'pending' ? `${f.label} (${pendingCount})` : f.label}</Toggle>)}
       </div>
       {error && <Notice tone="bad">{error}</Notice>}
       {list.length === 0 && <Notice>Tidak ada toko di daftar ini.</Notice>}

@@ -31,8 +31,8 @@ export function StoreCard({ store }: { store: StoreWithCover }) {
         <StatusPill store={store} className="absolute left-2.5 top-2.5" />
       </div>
       <div className="flex flex-col gap-1.5 p-3">
-        <p className="font-bold">{store.name}</p>
-        {store.block_info && <p className="text-sm text-tinta-lembut">{store.block_info}</p>}
+        <p className="truncate font-bold">{store.name}</p>
+        {store.block_info && <p className="truncate text-sm text-tinta-lembut">{store.block_info}</p>}
         <div className="flex flex-wrap gap-1.5 text-xs font-semibold">
           {store.accept_cash && <span className="rounded-md bg-emas-100 px-2 py-0.5 text-marun-900">Cash</span>}
           {store.accept_qris && <span className="rounded-md bg-emas-100 px-2 py-0.5 text-marun-900">QRIS</span>}
@@ -49,7 +49,7 @@ export function AddButton({ product, store }: { product: Product; store: Store }
       type="button"
       aria-label={`Tambah ${product.name} ke keranjang`}
       onClick={() => cartActions.add(product.id, store.id)}
-      className="size-11 flex-none rounded-full bg-marun-700 text-2xl font-bold leading-none text-emas-300"
+      className="inline-flex size-11 flex-none items-center justify-center rounded-full bg-marun-700 text-2xl font-bold leading-none text-emas-300"
     >
       +
     </button>
@@ -65,10 +65,10 @@ export function ProductMiniCard({ product }: { product: Product & { store: Store
         <Photo src={product.image_url} className="h-28 w-full" />
       </Link>
       <div className="flex flex-col gap-1 p-2.5">
-        <Link to={`produk/${product.id}`} className="truncate font-bold">{product.name}</Link>
+        <Link to={`produk/${product.id}`} className="block truncate font-bold">{product.name}</Link>
         <p className="truncate text-xs text-tinta-lembut">{product.store.name}</p>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-bold">{formatRupiah(product.price)}</p>
+          <p className="min-w-0 flex-1 truncate text-sm font-bold">{formatRupiah(product.price)}</p>
           {canOrder && <AddButton product={product} store={product.store} />}
         </div>
       </div>
@@ -88,7 +88,7 @@ export function ProductRow({ product }: { product: Product & { store: Store } })
       <Link to={`produk/${product.id}`} className="min-w-0 flex-1">
         <p className="truncate font-bold">{product.name}</p>
         <p className="truncate text-xs text-tinta-lembut">{product.store.name} · {status.label}</p>
-        <p className="text-sm font-bold">{formatRupiah(product.price)} / {product.unit}</p>
+        <p className="truncate text-sm font-bold">{formatRupiah(product.price)} / {product.unit}</p>
       </Link>
       {canOrder ? <AddButton product={product} store={product.store} /> : <span className="text-xs font-bold text-bahaya">{product.is_available ? 'Tutup' : 'Habis'}</span>}
     </li>

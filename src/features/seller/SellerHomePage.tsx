@@ -11,7 +11,7 @@ import { invalidateCatalog } from '../catalog/invalidate'
 import { useSellerContacts, type SellerContact } from './contacts'
 import type { Profile, Store } from '../../lib/types'
 
-const linkBtn = 'min-h-12 rounded-xl px-4 py-3 text-center font-bold'
+const linkBtn = 'inline-flex min-h-12 items-center justify-center rounded-xl px-4 text-center font-bold'
 
 function ApprovalNotice({ store, profile, contacts }: { store: Store; profile: Profile; contacts: SellerContact[] }) {
   if (store.approval_status === 'approved') return null

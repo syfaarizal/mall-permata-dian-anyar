@@ -126,7 +126,7 @@ export default function ProductSheet() {
               <button
                 type="button"
                 onClick={() => cartActions.add(p.id, p.store.id)}
-                className="min-h-12 w-full rounded-xl bg-marun-700 text-base font-bold text-emas-300"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-marun-700 text-base font-bold text-emas-300"
               >
                 Tambah
               </button>
@@ -137,21 +137,21 @@ export default function ProductSheet() {
                     type="button"
                     aria-label="Kurangi"
                     onClick={() => cartActions.setQty(p.id, qty - 1)}
-                    className="size-12 rounded-xl border border-garis bg-white text-xl font-bold"
+                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none"
                   >
                     −
                   </button>
-                  <span className="w-8 text-center text-lg font-bold">{qty}</span>
+                  <span className="w-8 shrink-0 text-center text-lg font-bold">{qty}</span>
                   <button
                     type="button"
                     aria-label="Tambah"
                     onClick={() => cartActions.setQty(p.id, qty + 1)}
-                    className="size-12 rounded-xl border border-garis bg-white text-xl font-bold"
+                    className="inline-flex size-12 items-center justify-center rounded-xl border border-garis bg-white text-xl font-bold leading-none"
                   >
                     +
                   </button>
                 </div>
-                <Link to="/keranjang" className="rounded-xl bg-marun-700 px-4 py-3 font-bold text-emas-300">
+                <Link to="/keranjang" className="inline-flex items-center justify-center rounded-xl bg-marun-700 px-4 py-3 font-bold text-emas-300">
                   Lihat keranjang
                 </Link>
               </div>

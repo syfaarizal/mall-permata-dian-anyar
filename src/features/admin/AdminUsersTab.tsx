@@ -37,7 +37,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
         {u.status === 'suspended' && <span className="rounded-md bg-marun-50 px-2 py-0.5 text-xs font-bold text-bahaya">Ditangguhkan</span>}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        <a href={buildWaLink(u.wa_number, `Halo ${u.name}, ini admin Mall Dian Anyar.`)} target="_blank" rel="noreferrer" className="min-h-12 rounded-xl border border-garis bg-white px-3 py-3 text-center font-bold">Chat via WA</a>
+        <a href={buildWaLink(u.wa_number, `Halo ${u.name}, ini admin Mall Dian Anyar.`)} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-3 text-center font-bold">Chat via WA</a>
         {!u.phone_verified_at && <Button disabled={busy} onClick={() => verify.mutate()}>Verifikasi</Button>}
         {canResetPinOf(role, u.admin_role) && <Button variant="ghost" disabled={busy} onClick={() => window.confirm(`Reset PIN ${u.name}? PIN lamanya tidak berlaku lagi.`) && pin.mutate()}>Reset PIN</Button>}
         {!self && canSuspendUser(role, u.admin_role) && (u.status === 'active'
@@ -76,7 +76,7 @@ export default function AdminUsersTab() {
       {reset && (
         <Card>
           <Notice tone="ok">PIN sementara {reset.user.name}: <b className="text-lg tracking-widest">{reset.pin}</b>. Hanya tampil sekali. Kirim lewat WhatsApp; dia wajib menggantinya saat masuk.</Notice>
-          <a href={buildWaLink(reset.user.wa_number, PIN_MESSAGE(reset.user.name, reset.pin))} target="_blank" rel="noreferrer" className="min-h-12 rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300">Kirim PIN via WhatsApp</a>
+          <a href={buildWaLink(reset.user.wa_number, PIN_MESSAGE(reset.user.name, reset.pin))} target="_blank" rel="noreferrer" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-marun-700 px-4 text-center font-bold text-emas-300">Kirim PIN via WhatsApp</a>
           <Button variant="ghost" onClick={() => setReset(null)}>Tutup</Button>
         </Card>
       )}

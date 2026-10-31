@@ -101,11 +101,11 @@ export default function OrderConfirmPage() {
         <p className="text-xs text-tinta-lembut">Ini permintaan pesanan. Pesanan jadi setelah penjual membalas.</p>
       </Card>
       {frozen ? (
-        <Link to="/" className="min-h-12 rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300">Kembali ke beranda</Link>
+        <Link to="/" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-marun-700 px-4 text-center font-bold text-emas-300">Kembali ke beranda</Link>
       ) : (
         <>
-          <a href={order.link} target="_blank" rel="noreferrer" onClick={markSent} className="min-h-12 rounded-xl bg-marun-700 px-4 py-3 text-center font-bold text-emas-300">Buka WhatsApp</a>
-          <Link to="/keranjang" className="min-h-12 rounded-xl border border-garis bg-white px-4 py-3 text-center font-bold">Kembali ke keranjang</Link>
+          <a href={order.link} target="_blank" rel="noreferrer" onClick={markSent} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-marun-700 px-4 text-center font-bold text-emas-300">Buka WhatsApp</a>
+          <Link to="/keranjang" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-4 text-center font-bold">Kembali ke keranjang</Link>
         </>
       )}
     </div>

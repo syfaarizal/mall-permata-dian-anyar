@@ -50,7 +50,7 @@ export function LoginPage() {
         {error && <Notice tone="bad">{error}</Notice>}
         <Button type="submit" disabled={busy}>Masuk</Button>
         <p className="text-sm text-tinta-lembut">Lupa PIN? Hubungi admin lewat grup WhatsApp perum.</p>
-        <Link to="/daftar" className="min-h-12 rounded-xl border border-garis bg-white py-3 text-center font-bold">Belum punya akun? Daftar</Link>
+        <Link to="/daftar" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-4 text-center font-bold">Belum punya akun? Daftar</Link>
       </form>
     </Shell>
   )
@@ -105,7 +105,7 @@ export function RegisterPage() {
         <Field label="Ulangi PIN"><input className={inputCls} type="password" inputMode="numeric" maxLength={6} autoComplete="new-password" value={f.pin2} onChange={set('pin2')} /></Field>
         {error && <Notice tone="bad">{error}</Notice>}
         <Button type="submit" disabled={busy || settings?.registration_open === false}>Daftar</Button>
-        <Link to="/masuk" className="min-h-12 rounded-xl border border-garis bg-white py-3 text-center font-bold">Sudah punya akun? Masuk</Link>
+        <Link to="/masuk" className="inline-flex min-h-12 items-center justify-center rounded-xl border border-garis bg-white px-4 text-center font-bold">Sudah punya akun? Masuk</Link>
       </form>
     </Shell>
   )

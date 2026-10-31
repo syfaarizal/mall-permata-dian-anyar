@@ -5,6 +5,12 @@ export const cx = (...a: (string | false | null | undefined)[]) => a.filter(Bool
 export const inputCls =
   'min-h-12 w-full rounded-lg border border-garis bg-white px-3 text-base text-tinta placeholder:text-tinta-lembut/70'
 
+/**
+ * Padding horizontal bawaan ada di sini, jadi override dari pemanggil harus
+ * ditulis dengan modifier important (mis. `px-1!`). Tanpa itu utility `px-*`
+ * yang sama sama-sama berlaku dan urutan CSS menentukan pemenangnya, bukan
+ * urutan class.
+ */
 export function Button({
   variant = 'primary',
   className,
@@ -13,7 +19,9 @@ export function Button({
   return (
     <button
       className={cx(
-        'min-h-12 rounded-xl px-4 font-bold disabled:opacity-50',
+        // inline-flex + items-center: tanpa ini teks di dalam button widget
+        // browser risen ke atas sehingga 글ara dan "+" terlihat meleset dari tengah.
+        'inline-flex min-h-12 items-center justify-center gap-1.5 rounded-xl px-4 text-center font-bold disabled:opacity-50',
         variant === 'primary' && 'bg-marun-700 text-emas-300',
         variant === 'ghost' && 'border border-garis bg-white text-tinta',
         variant === 'danger' && 'border border-bahaya bg-white text-bahaya',
@@ -24,19 +32,24 @@ export function Button({
   )
 }
 
-/** Tombol pilihan (aktif/tidak). Dipakai untuk hari buka, cara bayar, mode stok. */
+/**
+ * Tombol pilihan (aktif/tidak). Dipakai untuk hari buka, cara bayar, mode stok.
+ * Sama seperti Button, override padding perlu modifier important (mis. `px-1!`).
+ */
 export function Toggle({ pressed, className, ...p }: ButtonHTMLAttributes<HTMLButtonElement> & { pressed: boolean }) {
   return (
     <button
       type="button"
       aria-pressed={pressed}
       className={cx(
-        'min-h-12 rounded-xl border px-3 font-semibold',
+        'inline-flex min-h-12 min-w-0 items-center justify-center gap-1.5 rounded-xl border px-3 text-center font-semibold',
         pressed ? 'border-emas-500 bg-emas-100 text-marun-900' : 'border-garis bg-white text-tinta',
         className,
       )}
       {...p}
-    />
+    >
+      <span className="min-w-0 truncate">{p.children}</span>
+    </button>
   )
 }
 
