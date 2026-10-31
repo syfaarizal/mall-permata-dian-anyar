@@ -5,7 +5,7 @@ import { useNow } from '../../lib/now'
 import { getStoreStatus } from '../../lib/storeStatus'
 import { formatRupiah } from '../../lib/format'
 import { formatAddress } from '../../lib/address'
-import { Button, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
+import { Button, Notice, ScrollRow, Spinner, Toggle, inputCls } from '../../components/ui'
 import { cartActions } from '../cart/cartStore'
 import { lastOrderOf, readHistory, topStores } from '../cart/history'
 import { Photo, ProductMiniCard, ProductRow, StoreCard } from './components'
@@ -85,11 +85,11 @@ export default function HomePage() {
         </section>
       ) : (
         <>
-          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+          <ScrollRow gap="gap-2">
             <Toggle className="flex-none" pressed={readyOnly} onClick={() => setReadyOnly(!readyOnly)}>Ready sekarang</Toggle>
             <Toggle className="flex-none" pressed={cat === null} onClick={() => setCat(null)}>Semua</Toggle>
             {parents.map((c) => <Toggle key={c.id} className="flex-none" pressed={cat === c.id} onClick={() => setCat(cat === c.id ? null : c.id)}>{c.name}</Toggle>)}
-          </div>
+          </ScrollRow>
 
           {(stores.isLoading || ready.isLoading) && <Spinner />}
 
@@ -120,7 +120,7 @@ export default function HomePage() {
           {visibleReady.length > 0 && (
             <section className="flex flex-col gap-3">
               <h2 className="text-lg font-bold">Lagi ready sekarang</h2>
-              <div className="-mx-5 flex gap-3 overflow-x-auto px-5 pb-1">{visibleReady.map((p) => <ProductMiniCard key={p.id} product={p} />)}</div>
+              <ScrollRow gap="gap-3">{visibleReady.map((p) => <ProductMiniCard key={p.id} product={p} />)}</ScrollRow>
             </section>
           )}
 

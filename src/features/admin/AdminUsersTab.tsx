@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Button, Card, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
+import { Button, Card, Notice, ScrollRow, Spinner, Toggle, inputCls } from '../../components/ui'
 import { formatPhoneDisplay } from '../../lib/phone'
 import { formatAddress } from '../../lib/address'
 import { buildWaLink } from '../../lib/whatsapp'
@@ -68,9 +68,9 @@ export default function AdminUsersTab() {
   return (
     <div className="flex flex-col gap-3">
       <input className={inputCls} type="search" placeholder="Cari nama atau nomor" aria-label="Cari pengguna" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="-mx-5 flex gap-2 overflow-x-auto px-5">
+      <ScrollRow gap="gap-2">
         {FILTERS.map((f) => <Toggle key={f.id} className="flex-none" pressed={filter === f.id} onClick={() => setFilter(f.id)}>{f.label}</Toggle>)}
-      </div>
+      </ScrollRow>
       {reset && (
         <Card>
           <Notice tone="ok">PIN sementara {reset.user.name}: <b className="text-lg tracking-widest">{reset.pin}</b>. Hanya tampil sekali. Kirim lewat WhatsApp; dia wajib menggantinya saat masuk.</Notice>

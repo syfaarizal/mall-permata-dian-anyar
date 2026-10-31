@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
 
 export const cx = (...a: (string | false | null | undefined)[]) => a.filter(Boolean).join(' ')
 
@@ -62,6 +62,51 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn' | '
 
 export function Spinner() {
   return <p className="p-6 text-center text-tinta-lembut">Memuat…</p>
+}
+
+/**
+ * Baris yang bisa digulir ke samping. Scrollbar abu-abu disembunyikan; posisi
+ * gulir ditunjukkan pil kecil di bawah, ala carousel Shopee.
+ */
+export function ScrollRow({ children, className, gap = 'gap-2', bleed = true }: { children: ReactNode; className?: string; gap?: string; bleed?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [state, setState] = useState({ scrollable: false, offset: 0 })
+
+  const update = useCallback(() => {
+    const el = ref.current
+    if (!el) return
+    const max = el.scrollWidth - el.clientWidth
+    const scrollable = max > 4
+    setState({ scrollable, offset: scrollable && max > 0 ? el.scrollLeft / max : 0 })
+  }, [])
+
+  useEffect(() => {
+    update()
+    const el = ref.current
+    if (!el) return
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    for (const child of Array.from(el.children)) observer.observe(child)
+    return () => observer.disconnect()
+  }, [update, children])
+
+  return (
+    <div className={className}>
+      <div ref={ref} onScroll={update} className={cx('no-scrollbar flex overflow-x-auto', gap, bleed && '-mx-5 px-5')}>
+        {children}
+      </div>
+      {state.scrollable && (
+        <div aria-hidden data-scroll-indicator className={cx('mt-2.5 h-1', bleed && '-mx-5 px-5')}>
+          <div className="relative h-full w-full">
+            <div
+              className="absolute h-full rounded-full bg-marun-700/60 transition-[left] duration-150"
+              style={{ width: '32px', left: `calc(${state.offset * 100}% - ${state.offset * 32}px)` }}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export function BrandHeader({ title }: { title?: string }) {

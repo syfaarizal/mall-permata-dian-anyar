@@ -19,3 +19,13 @@
 }
 
 body { background: var(--color-krem); color: var(--color-tinta); font-family: var(--font-sans); }
+
+/* Scrollbar disembunyikan; penanda posisi digambar sendiri (lihat ScrollRow). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
