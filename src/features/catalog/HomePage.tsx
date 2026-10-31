@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { Link, Outlet, useNavigate, useSearchParams } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { useNow } from '../../lib/now'
 import { getStoreStatus } from '../../lib/storeStatus'
@@ -149,6 +149,7 @@ export default function HomePage() {
           </section>
         </>
       )}
+      <Outlet />
     </div>
   )
 }

@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 import { cx } from '../../components/ui'
 import { formatRupiah } from '../../lib/format'
 import { useStoreStatus } from '../../lib/now'
@@ -61,11 +61,11 @@ export function ProductMiniCard({ product }: { product: Product & { store: Store
   const canOrder = useStoreStatus(product.store).canOrder
   return (
     <div className="w-40 flex-none overflow-hidden rounded-2xl border border-garis bg-white">
-      <Link to={`/toko/${product.store.slug}`}>
+      <Link to={`produk/${product.id}`}>
         <Photo src={product.image_url} className="h-28 w-full" />
       </Link>
       <div className="flex flex-col gap-1 p-2.5">
-        <p className="truncate font-bold">{product.name}</p>
+        <Link to={`produk/${product.id}`} className="truncate font-bold">{product.name}</Link>
         <p className="truncate text-xs text-tinta-lembut">{product.store.name}</p>
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-bold">{formatRupiah(product.price)}</p>
@@ -82,8 +82,10 @@ export function ProductRow({ product }: { product: Product & { store: Store } })
   const canOrder = product.is_available && status.canOrder
   return (
     <li className="flex items-center gap-3 rounded-2xl border border-garis bg-white p-3">
-      <Photo src={product.image_url} className="size-16 flex-none rounded-xl" />
-      <Link to={`/toko/${product.store.slug}`} className="min-w-0 flex-1">
+      <Link to={`produk/${product.id}`}>
+        <Photo src={product.image_url} className="size-16 flex-none rounded-xl" />
+      </Link>
+      <Link to={`produk/${product.id}`} className="min-w-0 flex-1">
         <p className="truncate font-bold">{product.name}</p>
         <p className="truncate text-xs text-tinta-lembut">{product.store.name} · {status.label}</p>
         <p className="text-sm font-bold">{formatRupiah(product.price)} / {product.unit}</p>

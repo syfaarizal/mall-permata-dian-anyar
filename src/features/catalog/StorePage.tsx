@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router'
+import { Link, Outlet, useParams } from 'react-router'
 import { formatRupiah } from '../../lib/format'
 import { useStoreStatus } from '../../lib/now'
 import { Notice, Spinner, cx } from '../../components/ui'
@@ -63,14 +63,17 @@ export default function StorePage() {
       <ul className="flex flex-col gap-3">
         {list.map((p) => (
           <li key={p.id} className={cx('flex items-center gap-3 rounded-2xl border border-garis bg-white p-3', !p.is_available && 'opacity-60')}>
-            <Photo src={p.image_url} className="size-20 flex-none rounded-xl" />
-            <div className="min-w-0 flex-1">
+            <Link to={`produk/${p.id}`}>
+              <Photo src={p.image_url} className="size-20 flex-none rounded-xl" />
+            </Link>
+            <Link to={`produk/${p.id}`} className="min-w-0 flex-1">
               <p className="font-bold">{p.name}</p>
               {p.description && <p className="line-clamp-2 text-xs text-tinta-lembut">{p.description}</p>}
               <p className="text-sm font-bold">{formatRupiah(p.price)} / {p.unit}</p>
-              {!p.is_available && <Link to={`/?q=${encodeURIComponent(p.name)}`} className="text-xs font-bold text-marun-700 underline">Cari yang ready di toko lain</Link>}
-            </div>
-            {p.is_available ? (status.canOrder ? <Stepper product={p} storeId={s.id} /> : null) : <span className="text-sm font-bold text-bahaya">Habis</span>}
+            </Link>
+            {p.is_available ? (status.canOrder ? <Stepper product={p} storeId={s.id} /> : null) : (
+              <Link to={`/?q=${encodeURIComponent(p.name)}`} className="text-xs font-bold text-marun-700 underline">Habis — cari di toko lain</Link>
+            )}
           </li>
         ))}
       </ul>
@@ -79,6 +82,7 @@ export default function StorePage() {
           Lihat keranjang · {totalItems({ ...cart, lines: mine })} item · {formatRupiah(subtotal)}
         </Link>
       )}
+      <Outlet />
     </div>
   )
 }

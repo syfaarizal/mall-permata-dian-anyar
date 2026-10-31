@@ -9,6 +9,7 @@ export const catalogKeys = {
   store: (slug: string) => ['catalog', 'store', slug] as const,
   storeProducts: (storeId: string) => ['catalog', 'store-products', storeId] as const,
   search: (q: string) => ['catalog', 'search', q] as const,
+  product: (id: string) => ['catalog', 'product', id] as const,
   /** Harga di keranjang selalu diambil dari server, jadi ikut disegarkan. */
   cartProducts: ['cart-products'] as const,
 }

@@ -29,3 +29,13 @@ body { background: var(--color-krem); color: var(--color-tinta); font-family: va
   display: none;
 }
 
+/* Sheet detail produk: muncul dari bawah seperti GoFood. */
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+

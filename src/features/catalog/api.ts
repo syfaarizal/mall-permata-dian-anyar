@@ -32,6 +32,13 @@ export async function fetchStoreProducts(storeId: string): Promise<Product[]> {
   ) as Product[]
 }
 
+/** Detail satu produk, lengkap dengan tokonya (untuk status buka/tutup). */
+export async function fetchProductWithStore(id: string): Promise<ProductWithStore | null> {
+  return check(
+    await supabase.from('products').select('*, store:stores(*)').eq('id', id).maybeSingle(),
+  ) as ProductWithStore | null
+}
+
 export async function fetchReadyProducts(): Promise<ProductWithStore[]> {
   return check(
     await supabase

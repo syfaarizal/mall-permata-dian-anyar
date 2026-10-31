@@ -21,6 +21,7 @@ const SellerHomePage = lazy(() => import('./features/seller/SellerHomePage'))
 const StoreFormPage = lazy(() => import('./features/seller/StoreFormPage'))
 const ProductListPage = lazy(() => import('./features/seller/ProductListPage'))
 const ProductFormPage = lazy(() => import('./features/seller/ProductFormPage'))
+const ProductSheet = lazy(() => import('./features/catalog/ProductSheet'))
 
 const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, retry: 1, refetchOnWindowFocus: false } } })
 
@@ -45,8 +46,12 @@ export default function App() {
             <Route element={<RequireAuth />}>
               <Route path="ganti-pin" element={<ChangePinPage />} />
               <Route element={<AppShell />}>
-                <Route index element={<HomePage />} />
-                <Route path="toko/:slug" element={<StorePage />} />
+                <Route path="/" element={<HomePage />}>
+                  <Route path="produk/:id" element={<ProductSheet />} />
+                </Route>
+                <Route path="toko/:slug" element={<StorePage />}>
+                  <Route path="produk/:id" element={<ProductSheet />} />
+                </Route>
                 <Route path="keranjang" element={<CartPage />} />
                 <Route path="pesan/:storeId" element={<OrderConfirmPage />} />
                 <Route path="akun" element={<AccountPage />} />
