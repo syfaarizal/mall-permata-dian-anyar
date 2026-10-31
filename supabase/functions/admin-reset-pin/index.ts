@@ -1,5 +1,3 @@
-// Edge Function: admin mereset PIN pengguna (PIN sementara 6 angka, wajib diganti saat masuk).
-// Deploy: supabase functions deploy admin-reset-pin
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const cors = {
