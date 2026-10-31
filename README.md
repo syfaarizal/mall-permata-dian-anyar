@@ -29,8 +29,9 @@ npm test                  # tes fungsi inti
    Migrasi lanjutan: `0004_admin_panel.sql` (panel admin), `0005_alamat_rt.sql` (blok bebas teks + kolom RT).
 3. Authentication → Providers → Email: aktif, **matikan "Confirm email"**. Password minimal 6 karakter (PIN 6 angka).
 4. Ganti kode undangan: `update community_settings set invite_code = 'KODE-ACAK-PANJANG';` (pakai kode panjang supaya tidak mudah ditebak).
-5. Jadikan diri sendiri admin (setelah daftar lewat aplikasi):
-   `update profiles set is_admin = true where wa_number = '628xxxxxxxxxx';`
+5. Jadikan diri sendiri owner (setelah daftar lewat aplikasi):
+   `update profiles set admin_role = 'owner' where wa_number = '628xxxxxxxxxx';`
+   (Admin lain diberi peran lewat tab **Tim** di panel admin, bukan lewat SQL.)
 6. Storage: bucket `media` sudah dibuat oleh migrasi.
 
 ## Login nomor + PIN
@@ -85,3 +86,29 @@ select public.admin_verify_phone('<id profil penjual>');
 select public.admin_set_store_approval('<id toko>', 'approved');
 ```
 Isi nomor admin: `update community_settings set admin_wa_number = '628xxxxxxxxxx';`
+
+## Peran admin (migrasi 0006)
+| Aksi | Owner (Developer) | Admin Komunitas | Admin Operasional |
+|---|---|---|---|
+| Lihat toko dan pengguna | ya | ya | ya |
+| Verifikasi nomor, setujui/tolak toko | ya | ya | ya |
+| Reset PIN pengguna biasa | ya | ya | ya |
+| Tangguhkan toko / pengguna | ya | ya | tidak |
+| Kode undangan, blok, pendaftaran, kategori | ya | ya | tidak |
+| Saklar sistem (OTP, wajib warga) | ya | tidak | tidak |
+| Beri/cabut peran admin, reset PIN akun admin | ya | tidak | tidak |
+
+- Aturan ditegakkan di database (RLS, trigger, fungsi `security definer`) dan Edge Function, bukan hanya disembunyikan di UI. Tabel di atas sama dengan `src/lib/permissions.ts` (UI) dan `0006_admin_roles.sql` (server); ubah keduanya sekaligus.
+- Peran `owner` hanya bisa diberikan lewat SQL oleh developer. Akun owner tidak bisa ditangguhkan atau di-reset PIN-nya dari aplikasi.
+- Kontak konfirmasi penjual otomatis mengikuti Admin Operasional yang aktif (`get_seller_contacts`). Nomor di Pengaturan hanya cadangan.
+- Setelah menerapkan 0006, deploy ulang fungsi: `supabase functions deploy admin-reset-pin`.
+
+### Menguji aturan peran di Postgres lokal (opsional)
+```bash
+createdb mda_test
+psql -d mda_test -f supabase/tests/stubs.sql
+for f in supabase/migrations/000{1,2,3,4,5}_*.sql; do psql -d mda_test -f $f; done
+# buat beberapa akun uji di auth.users, jadikan satu is_admin=true, lalu:
+psql -d mda_test -f supabase/migrations/0006_admin_roles.sql
+psql -d mda_test -f supabase/tests/roles_test.sql   # cari baris PASS / FAIL
+```

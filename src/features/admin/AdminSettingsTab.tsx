@@ -6,9 +6,12 @@ import { saveSettings, type CommunitySettings } from './api'
 import { useAdminSettings } from './hooks'
 import { friendlyError, generateInviteCode, parseBlocks, validateSettings } from './logic'
 import CategoryManager from './CategoryManager'
+import { useAuth } from '../auth/AuthContext'
+import { can } from '../../lib/permissions'
 
 function SettingsForm({ s }: { s: CommunitySettings }) {
   const qc = useQueryClient()
+  const isOwner = can(useAuth().profile?.admin_role, 'settings.system')
   const [code, setCode] = useState(s.invite_code)
   const [blocks, setBlocks] = useState(s.block_suggestions.join(', '))
   const [wa, setWa] = useState(s.admin_wa_number ?? '')
@@ -24,7 +27,7 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
         block_suggestions: parseBlocks(blocks),
         admin_wa_number: wa.trim() ? normalizePhone(wa) : null,
         registration_open: open,
-        require_seller_residency: residency,
+        ...(isOwner ? { require_seller_residency: residency } : {}),
       }),
     onSuccess: () => { setMsg({ ok: true, text: 'Pengaturan tersimpan.' }); void qc.invalidateQueries({ queryKey: ['admin-settings'] }); void qc.invalidateQueries({ queryKey: ['public-settings'] }) },
     onError: (e) => setMsg({ ok: false, text: friendlyError(e.message) }),
@@ -57,10 +60,10 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
       </Card>
       <Card>
         <p className="font-bold">Penjual</p>
-        <Field label="Nomor WhatsApp admin" error={errors.admin_wa_number} hint="Tujuan konfirmasi penjual."><input className={inputCls} inputMode="tel" value={wa} onChange={(e) => setWa(e.target.value)} /></Field>
+        <Field label="Nomor WhatsApp admin" error={errors.admin_wa_number} hint="Cadangan saja. Kontak utama otomatis mengikuti Admin Operasional."><input className={inputCls} inputMode="tel" value={wa} onChange={(e) => setWa(e.target.value)} /></Field>
         <div className="flex items-center justify-between gap-3">
-          <div><p className="font-semibold">Wajib warga perum</p><p className="text-xs text-tinta-lembut">Alamat penjual dicek admin.</p></div>
-          <Toggle pressed={residency} onClick={() => setResidency(!residency)}>{residency ? 'Aktif' : 'Mati'}</Toggle>
+          <div><p className="font-semibold">Wajib warga perum</p><p className="text-xs text-tinta-lembut">Alamat penjual dicek admin.{!isOwner && ' Hanya owner yang bisa mengubah.'}</p></div>
+          <Toggle pressed={residency} disabled={!isOwner} onClick={() => setResidency(!residency)}>{residency ? 'Aktif' : 'Mati'}</Toggle>
         </div>
       </Card>
       <Card>

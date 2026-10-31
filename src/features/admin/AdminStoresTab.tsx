@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Notice, Spinner, Toggle } from '../../components/ui'
+import { useAuth } from '../auth/AuthContext'
+import { can } from '../../lib/permissions'
 import { buildWaLink } from '../../lib/whatsapp'
 import { formatAddress } from '../../lib/address'
 import { setStoreApproval, verifyPhone, type AdminStore } from './api'
@@ -16,6 +18,7 @@ const FILTERS: { id: ApprovalStatus | 'other'; label: string }[] = [
 
 function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void; onError: (m: string) => void }) {
   const verified = !!s.owner?.phone_verified_at
+  const role = useAuth().profile?.admin_role
   const approval = useMutation({ mutationFn: (st: ApprovalStatus) => setStoreApproval(s.id, st), onSuccess: onDone, onError: (e) => onError(friendlyError(e.message)) })
   const verify = useMutation({ mutationFn: () => verifyPhone(s.owner!.id), onSuccess: onDone, onError: (e) => onError(friendlyError(e.message)) })
   const busy = approval.isPending || verify.isPending
@@ -34,7 +37,7 @@ function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void; 
         {!verified && s.owner && <Button variant="ghost" disabled={busy} onClick={() => verify.mutate()}>Verifikasi nomor</Button>}
         {s.approval_status !== 'approved' && <Button disabled={busy || !verified} onClick={() => approval.mutate('approved')}>Setujui</Button>}
         {s.approval_status === 'pending' && <Button variant="danger" disabled={busy} onClick={() => approval.mutate('rejected')}>Tolak</Button>}
-        {s.approval_status === 'approved' && <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan toko ${s.name}?`) && approval.mutate('suspended')}>Tangguhkan</Button>}
+        {s.approval_status === 'approved' && can(role, 'stores.suspend') && <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan toko ${s.name}?`) && approval.mutate('suspended')}>Tangguhkan</Button>}
       </div>
     </Card>
   )

@@ -1,4 +1,6 @@
 // Tulisan tangan sementara. Nanti diganti tipe hasil generate: `supabase gen types typescript`.
+export type AdminRole = 'owner' | 'community' | 'operations'
+
 export interface Profile {
   id: string
   wa_number: string
@@ -7,6 +9,7 @@ export interface Profile {
   house_no: string
   rt: string | null
   is_admin: boolean
+  admin_role: AdminRole | null
   status: 'active' | 'suspended'
   phone_verified_at: string | null
   must_change_pin: boolean

@@ -8,6 +8,7 @@ import { resetPin, setUserStatus, verifyPhone, type AdminProfile } from './api'
 import { useAdminStores, useAdminUsers } from './hooks'
 import { PIN_MESSAGE, friendlyError } from './logic'
 import { useAuth } from '../auth/AuthContext'
+import { ROLE_LABEL, canResetPinOf, canSuspendUser } from '../../lib/permissions'
 
 type Filter = 'all' | 'seller' | 'suspended' | 'unverified'
 const FILTERS: { id: Filter; label: string }[] = [
@@ -22,6 +23,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
   const pin = useMutation({ mutationFn: () => resetPin(u.id), onSuccess: (p) => onPin(u, p), onError: (e: Error) => onError(e.message) })
   const busy = verify.isPending || status.isPending || pin.isPending
   const self = u.id === me
+  const role = useAuth().profile?.admin_role
   return (
     <Card>
       <div>
@@ -29,7 +31,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
         <p className="text-sm text-tinta-lembut">{formatPhoneDisplay(u.wa_number)} · {formatAddress(u)}</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {u.is_admin && <span className={tag}>Admin</span>}
+        {u.admin_role && <span className={tag}>{ROLE_LABEL[u.admin_role]}</span>}
         {isSeller && <span className={tag}>Penjual</span>}
         <span className={tag}>{u.phone_verified_at ? 'Terverifikasi' : 'Belum verifikasi'}</span>
         {u.status === 'suspended' && <span className="rounded-md bg-marun-50 px-2 py-0.5 text-xs font-bold text-bahaya">Ditangguhkan</span>}
@@ -37,8 +39,8 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
       <div className="grid grid-cols-2 gap-2">
         <a href={buildWaLink(u.wa_number, `Halo ${u.name}, ini admin Mall Dian Anyar.`)} target="_blank" rel="noreferrer" className="min-h-12 rounded-xl border border-garis bg-white px-3 py-3 text-center font-bold">Chat via WA</a>
         {!u.phone_verified_at && <Button disabled={busy} onClick={() => verify.mutate()}>Verifikasi</Button>}
-        <Button variant="ghost" disabled={busy} onClick={() => window.confirm(`Reset PIN ${u.name}? PIN lamanya tidak berlaku lagi.`) && pin.mutate()}>Reset PIN</Button>
-        {!self && (u.status === 'active'
+        {canResetPinOf(role, u.admin_role) && <Button variant="ghost" disabled={busy} onClick={() => window.confirm(`Reset PIN ${u.name}? PIN lamanya tidak berlaku lagi.`) && pin.mutate()}>Reset PIN</Button>}
+        {!self && canSuspendUser(role, u.admin_role) && (u.status === 'active'
           ? <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan ${u.name}?`) && status.mutate('suspended')}>Tangguhkan</Button>
           : <Button disabled={busy} onClick={() => status.mutate('active')}>Aktifkan lagi</Button>)}
       </div>

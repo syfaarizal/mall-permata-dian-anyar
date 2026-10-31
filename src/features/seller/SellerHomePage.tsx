@@ -8,11 +8,12 @@ import { Card, Notice, Spinner, Toggle } from '../../components/ui'
 import { setStoreOverride } from './api'
 import { keys, useMyStore, useProducts } from './hooks'
 import { invalidateCatalog } from '../catalog/invalidate'
+import { useSellerContacts, type SellerContact } from './contacts'
 import type { Profile, Store } from '../../lib/types'
 
 const linkBtn = 'min-h-12 rounded-xl px-4 py-3 text-center font-bold'
 
-function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Profile; adminWa: string | null }) {
+function ApprovalNotice({ store, profile, contacts }: { store: Store; profile: Profile; contacts: SellerContact[] }) {
   if (store.approval_status === 'approved') return null
   if (store.approval_status === 'rejected') return <Notice tone="bad">Toko belum disetujui admin. Hubungi admin untuk info lebih lanjut.</Notice>
   if (store.approval_status === 'suspended') return <Notice tone="bad">Toko sedang ditangguhkan admin.</Notice>
@@ -21,12 +22,14 @@ function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Pr
   return (
     <Card>
       <Notice tone="warn">Toko belum tampil. Penjual wajib warga perum, jadi nomormu perlu dikonfirmasi admin lewat WhatsApp.</Notice>
-      {adminWa ? (
-        <a className={`${linkBtn} bg-marun-700 text-emas-300`} href={buildWaLink(adminWa, text)} target="_blank" rel="noreferrer">
-          Kirim konfirmasi ke admin via WhatsApp
-        </a>
+      {contacts.length > 0 ? (
+        contacts.map((c) => (
+          <a key={c.wa_number} className={`${linkBtn} bg-marun-700 text-emas-300`} href={buildWaLink(c.wa_number, text)} target="_blank" rel="noreferrer">
+            Kirim konfirmasi ke {contacts.length > 1 ? c.name.split(' ')[0] : 'admin'} via WhatsApp
+          </a>
+        ))
       ) : (
-        <p className="text-sm text-tinta-lembut">Nomor admin belum diatur. Hubungi admin lewat grup perum.</p>
+        <p className="text-sm text-tinta-lembut">Kontak admin belum diatur. Hubungi admin lewat grup perum.</p>
       )}
     </Card>
   )
@@ -35,6 +38,7 @@ function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Pr
 export default function SellerHomePage() {
   const { profile } = useAuth()
   const { data: settings } = usePublicSettings()
+  const contacts = useSellerContacts(settings?.admin_wa_number ?? null)
   const { data: store, isLoading } = useMyStore(profile!.id)
   const { data: products } = useProducts(store?.id)
   const qc = useQueryClient()
@@ -68,7 +72,7 @@ export default function SellerHomePage() {
         <h1 className="text-2xl font-bold text-marun-700">{store.name}</h1>
         <p className="text-sm text-tinta-lembut">{store.approval_status === 'approved' ? 'Toko tampil untuk pembeli' : 'Toko belum tampil'}</p>
       </div>
-      <ApprovalNotice store={store} profile={profile!} adminWa={settings?.admin_wa_number ?? null} />
+      <ApprovalNotice store={store} profile={profile!} contacts={contacts} />
       <Card>
         <div className="flex items-center justify-between gap-3">
           <p className="font-bold">Status toko</p>

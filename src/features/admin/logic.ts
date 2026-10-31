@@ -33,7 +33,9 @@ export function validateSettings(v: SettingsForm, normalize: (s: string) => stri
 
 const MESSAGES: [string, string][] = [
   ['OWNER_NOT_VERIFIED', 'Nomor penjual belum terverifikasi. Verifikasi dulu.'],
-  ['FORBIDDEN', 'Hanya admin yang boleh melakukan ini.'],
+  ['FORBIDDEN', 'Peranmu tidak punya wewenang untuk aksi ini.'],
+  ['INVALID_ROLE', 'Peran tidak valid.'],
+  ['USER_NOT_FOUND', 'Pengguna tidak ditemukan.'],
   ['violates foreign key', 'Kategori ini masih dipakai toko atau produk.'],
   ['duplicate key', 'Data dengan nama itu sudah ada.'],
 ]

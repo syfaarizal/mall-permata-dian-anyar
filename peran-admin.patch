@@ -1,0 +1,883 @@
+diff --git a/README.md b/README.md
+index e3b67f5..f2fa939 100644
+--- a/README.md
++++ b/README.md
+@@ -29,8 +29,9 @@ npm test                  # tes fungsi inti
+    Migrasi lanjutan: `0004_admin_panel.sql` (panel admin), `0005_alamat_rt.sql` (blok bebas teks + kolom RT).
+ 3. Authentication → Providers → Email: aktif, **matikan "Confirm email"**. Password minimal 6 karakter (PIN 6 angka).
+ 4. Ganti kode undangan: `update community_settings set invite_code = 'KODE-ACAK-PANJANG';` (pakai kode panjang supaya tidak mudah ditebak).
+-5. Jadikan diri sendiri admin (setelah daftar lewat aplikasi):
+-   `update profiles set is_admin = true where wa_number = '628xxxxxxxxxx';`
++5. Jadikan diri sendiri owner (setelah daftar lewat aplikasi):
++   `update profiles set admin_role = 'owner' where wa_number = '628xxxxxxxxxx';`
++   (Admin lain diberi peran lewat tab **Tim** di panel admin, bukan lewat SQL.)
+ 6. Storage: bucket `media` sudah dibuat oleh migrasi.
+ 
+ ## Login nomor + PIN
+@@ -85,3 +86,29 @@ select public.admin_verify_phone('<id profil penjual>');
+ select public.admin_set_store_approval('<id toko>', 'approved');
+ ```
+ Isi nomor admin: `update community_settings set admin_wa_number = '628xxxxxxxxxx';`
++
++## Peran admin (migrasi 0006)
++| Aksi | Owner (Developer) | Admin Komunitas | Admin Operasional |
++|---|---|---|---|
++| Lihat toko dan pengguna | ya | ya | ya |
++| Verifikasi nomor, setujui/tolak toko | ya | ya | ya |
++| Reset PIN pengguna biasa | ya | ya | ya |
++| Tangguhkan toko / pengguna | ya | ya | tidak |
++| Kode undangan, blok, pendaftaran, kategori | ya | ya | tidak |
++| Saklar sistem (OTP, wajib warga) | ya | tidak | tidak |
++| Beri/cabut peran admin, reset PIN akun admin | ya | tidak | tidak |
++
++- Aturan ditegakkan di database (RLS, trigger, fungsi `security definer`) dan Edge Function, bukan hanya disembunyikan di UI. Tabel di atas sama dengan `src/lib/permissions.ts` (UI) dan `0006_admin_roles.sql` (server); ubah keduanya sekaligus.
++- Peran `owner` hanya bisa diberikan lewat SQL oleh developer. Akun owner tidak bisa ditangguhkan atau di-reset PIN-nya dari aplikasi.
++- Kontak konfirmasi penjual otomatis mengikuti Admin Operasional yang aktif (`get_seller_contacts`). Nomor di Pengaturan hanya cadangan.
++- Setelah menerapkan 0006, deploy ulang fungsi: `supabase functions deploy admin-reset-pin`.
++
++### Menguji aturan peran di Postgres lokal (opsional)
++```bash
++createdb mda_test
++psql -d mda_test -f supabase/tests/stubs.sql
++for f in supabase/migrations/000{1,2,3,4,5}_*.sql; do psql -d mda_test -f $f; done
++# buat beberapa akun uji di auth.users, jadikan satu is_admin=true, lalu:
++psql -d mda_test -f supabase/migrations/0006_admin_roles.sql
++psql -d mda_test -f supabase/tests/roles_test.sql   # cari baris PASS / FAIL
++```
+diff --git a/src/features/admin/AdminPage.tsx b/src/features/admin/AdminPage.tsx
+index 6ad0a36..41db97d 100644
+--- a/src/features/admin/AdminPage.tsx
++++ b/src/features/admin/AdminPage.tsx
+@@ -1,30 +1,40 @@
+ import { Navigate, useSearchParams } from 'react-router'
+ import { useAuth } from '../auth/AuthContext'
+ import { Toggle } from '../../components/ui'
++import { can, ROLE_LABEL } from '../../lib/permissions'
+ import AdminStoresTab from './AdminStoresTab'
+ import AdminUsersTab from './AdminUsersTab'
+ import AdminSettingsTab from './AdminSettingsTab'
++import AdminTeamTab from './AdminTeamTab'
+ 
+-const TABS = [
+-  { id: 'toko', label: 'Toko' },
+-  { id: 'pengguna', label: 'Pengguna' },
+-  { id: 'pengaturan', label: 'Pengaturan' },
+-] as const
++type TabId = 'toko' | 'pengguna' | 'pengaturan' | 'tim'
+ 
+ export default function AdminPage() {
+   const { profile } = useAuth()
+   const [params, setParams] = useSearchParams()
+-  if (!profile?.is_admin) return <Navigate to="/" replace />
+-  const tab = TABS.find((t) => t.id === params.get('tab'))?.id ?? 'toko'
++  const role = profile?.admin_role
++  if (!profile?.is_admin || !role) return <Navigate to="/" replace />
++
++  const tabs: { id: TabId; label: string }[] = [
++    { id: 'toko', label: 'Toko' },
++    { id: 'pengguna', label: 'Pengguna' },
++    ...(can(role, 'settings.community') ? [{ id: 'pengaturan' as const, label: 'Pengaturan' }] : []),
++    ...(can(role, 'admins.manage') ? [{ id: 'tim' as const, label: 'Tim' }] : []),
++  ]
++  const tab = tabs.find((t) => t.id === params.get('tab'))?.id ?? 'toko'
+   return (
+     <div className="flex flex-col gap-4">
+-      <h1 className="text-2xl font-bold text-marun-700">Panel admin</h1>
+-      <div className="grid grid-cols-3 gap-2">
+-        {TABS.map((t) => <Toggle key={t.id} pressed={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}>{t.label}</Toggle>)}
++      <div>
++        <h1 className="text-2xl font-bold text-marun-700">Panel admin</h1>
++        <p className="text-sm text-tinta-lembut">{ROLE_LABEL[role]}</p>
++      </div>
++      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
++        {tabs.map((t) => <Toggle key={t.id} className="px-1 text-sm" pressed={tab === t.id} onClick={() => setParams({ tab: t.id }, { replace: true })}>{t.label}</Toggle>)}
+       </div>
+       {tab === 'toko' && <AdminStoresTab />}
+       {tab === 'pengguna' && <AdminUsersTab />}
+       {tab === 'pengaturan' && <AdminSettingsTab />}
++      {tab === 'tim' && <AdminTeamTab />}
+     </div>
+   )
+ }
+diff --git a/src/features/admin/AdminSettingsTab.tsx b/src/features/admin/AdminSettingsTab.tsx
+index faa747c..6c73577 100644
+--- a/src/features/admin/AdminSettingsTab.tsx
++++ b/src/features/admin/AdminSettingsTab.tsx
+@@ -6,9 +6,12 @@ import { saveSettings, type CommunitySettings } from './api'
+ import { useAdminSettings } from './hooks'
+ import { friendlyError, generateInviteCode, parseBlocks, validateSettings } from './logic'
+ import CategoryManager from './CategoryManager'
++import { useAuth } from '../auth/AuthContext'
++import { can } from '../../lib/permissions'
+ 
+ function SettingsForm({ s }: { s: CommunitySettings }) {
+   const qc = useQueryClient()
++  const isOwner = can(useAuth().profile?.admin_role, 'settings.system')
+   const [code, setCode] = useState(s.invite_code)
+   const [blocks, setBlocks] = useState(s.block_suggestions.join(', '))
+   const [wa, setWa] = useState(s.admin_wa_number ?? '')
+@@ -24,7 +27,7 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
+         block_suggestions: parseBlocks(blocks),
+         admin_wa_number: wa.trim() ? normalizePhone(wa) : null,
+         registration_open: open,
+-        require_seller_residency: residency,
++        ...(isOwner ? { require_seller_residency: residency } : {}),
+       }),
+     onSuccess: () => { setMsg({ ok: true, text: 'Pengaturan tersimpan.' }); void qc.invalidateQueries({ queryKey: ['admin-settings'] }); void qc.invalidateQueries({ queryKey: ['public-settings'] }) },
+     onError: (e) => setMsg({ ok: false, text: friendlyError(e.message) }),
+@@ -57,10 +60,10 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
+       </Card>
+       <Card>
+         <p className="font-bold">Penjual</p>
+-        <Field label="Nomor WhatsApp admin" error={errors.admin_wa_number} hint="Tujuan konfirmasi penjual."><input className={inputCls} inputMode="tel" value={wa} onChange={(e) => setWa(e.target.value)} /></Field>
++        <Field label="Nomor WhatsApp admin" error={errors.admin_wa_number} hint="Cadangan saja. Kontak utama otomatis mengikuti Admin Operasional."><input className={inputCls} inputMode="tel" value={wa} onChange={(e) => setWa(e.target.value)} /></Field>
+         <div className="flex items-center justify-between gap-3">
+-          <div><p className="font-semibold">Wajib warga perum</p><p className="text-xs text-tinta-lembut">Alamat penjual dicek admin.</p></div>
+-          <Toggle pressed={residency} onClick={() => setResidency(!residency)}>{residency ? 'Aktif' : 'Mati'}</Toggle>
++          <div><p className="font-semibold">Wajib warga perum</p><p className="text-xs text-tinta-lembut">Alamat penjual dicek admin.{!isOwner && ' Hanya owner yang bisa mengubah.'}</p></div>
++          <Toggle pressed={residency} disabled={!isOwner} onClick={() => setResidency(!residency)}>{residency ? 'Aktif' : 'Mati'}</Toggle>
+         </div>
+       </Card>
+       <Card>
+diff --git a/src/features/admin/AdminStoresTab.tsx b/src/features/admin/AdminStoresTab.tsx
+index 6c81ecd..49c68cf 100644
+--- a/src/features/admin/AdminStoresTab.tsx
++++ b/src/features/admin/AdminStoresTab.tsx
+@@ -1,6 +1,8 @@
+ import { useState } from 'react'
+ import { useMutation, useQueryClient } from '@tanstack/react-query'
+ import { Button, Card, Notice, Spinner, Toggle } from '../../components/ui'
++import { useAuth } from '../auth/AuthContext'
++import { can } from '../../lib/permissions'
+ import { buildWaLink } from '../../lib/whatsapp'
+ import { formatAddress } from '../../lib/address'
+ import { setStoreApproval, verifyPhone, type AdminStore } from './api'
+@@ -16,6 +18,7 @@ const FILTERS: { id: ApprovalStatus | 'other'; label: string }[] = [
+ 
+ function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void; onError: (m: string) => void }) {
+   const verified = !!s.owner?.phone_verified_at
++  const role = useAuth().profile?.admin_role
+   const approval = useMutation({ mutationFn: (st: ApprovalStatus) => setStoreApproval(s.id, st), onSuccess: onDone, onError: (e) => onError(friendlyError(e.message)) })
+   const verify = useMutation({ mutationFn: () => verifyPhone(s.owner!.id), onSuccess: onDone, onError: (e) => onError(friendlyError(e.message)) })
+   const busy = approval.isPending || verify.isPending
+@@ -34,7 +37,7 @@ function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void;
+         {!verified && s.owner && <Button variant="ghost" disabled={busy} onClick={() => verify.mutate()}>Verifikasi nomor</Button>}
+         {s.approval_status !== 'approved' && <Button disabled={busy || !verified} onClick={() => approval.mutate('approved')}>Setujui</Button>}
+         {s.approval_status === 'pending' && <Button variant="danger" disabled={busy} onClick={() => approval.mutate('rejected')}>Tolak</Button>}
+-        {s.approval_status === 'approved' && <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan toko ${s.name}?`) && approval.mutate('suspended')}>Tangguhkan</Button>}
++        {s.approval_status === 'approved' && can(role, 'stores.suspend') && <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan toko ${s.name}?`) && approval.mutate('suspended')}>Tangguhkan</Button>}
+       </div>
+     </Card>
+   )
+diff --git a/src/features/admin/AdminTeamTab.tsx b/src/features/admin/AdminTeamTab.tsx
+new file mode 100644
+index 0000000..3d59a40
+--- /dev/null
++++ b/src/features/admin/AdminTeamTab.tsx
+@@ -0,0 +1,79 @@
++import { useState } from 'react'
++import { useMutation, useQueryClient } from '@tanstack/react-query'
++import { Button, Card, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
++import { formatPhoneDisplay } from '../../lib/phone'
++import { ROLE_DESC, ROLE_LABEL } from '../../lib/permissions'
++import { useAuth } from '../auth/AuthContext'
++import { setAdminRole } from './api'
++import { useAdminUsers } from './hooks'
++import { friendlyError } from './logic'
++
++type Assignable = 'community' | 'operations'
++
++export default function AdminTeamTab() {
++  const { profile } = useAuth()
++  const { data, isLoading } = useAdminUsers()
++  const qc = useQueryClient()
++  const [q, setQ] = useState('')
++  const [role, setRole] = useState<Assignable>('operations')
++  const [error, setError] = useState('')
++  const change = useMutation({
++    mutationFn: ({ id, r }: { id: string; r: Assignable | null }) => setAdminRole(id, r),
++    onSuccess: () => { setError(''); setQ(''); void qc.invalidateQueries({ queryKey: ['admin-users'] }); void qc.invalidateQueries({ queryKey: ['seller-contacts'] }) },
++    onError: (e) => setError(friendlyError(e.message)),
++  })
++  if (isLoading) return <Spinner />
++  const users = data ?? []
++  const admins = users.filter((u) => u.admin_role)
++  const term = q.trim().toLowerCase()
++  const candidates = term.length < 2 ? [] : users.filter((u) => !u.admin_role && u.status === 'active' && (u.name.toLowerCase().includes(term) || u.wa_number.includes(term.replace(/\D/g, '') || '\u0000'))).slice(0, 5)
++
++  return (
++    <div className="flex flex-col gap-4">
++      <Card>
++        <p className="font-bold">Peran admin</p>
++        {(['owner', 'community', 'operations'] as const).map((r) => (
++          <p key={r} className="text-sm"><span className="font-semibold">{ROLE_LABEL[r]}:</span> <span className="text-tinta-lembut">{ROLE_DESC[r]}</span></p>
++        ))}
++        <p className="text-xs text-tinta-lembut">Peran Owner hanya bisa diberikan lewat SQL oleh developer.</p>
++      </Card>
++      {error && <Notice tone="bad">{error}</Notice>}
++      <Card>
++        <p className="font-bold">Tim admin ({admins.length})</p>
++        {admins.map((a) => {
++          const locked = a.admin_role === 'owner' || a.id === profile?.id
++          return (
++            <div key={a.id} className="flex flex-col gap-2 border-t border-garis pt-3 first:border-t-0 first:pt-0">
++              <div>
++                <p className="font-semibold">{a.name}{a.id === profile?.id && ' (kamu)'}</p>
++                <p className="text-sm text-tinta-lembut">{formatPhoneDisplay(a.wa_number)} · {ROLE_LABEL[a.admin_role!]}{a.status === 'suspended' && ' · Ditangguhkan'}</p>
++              </div>
++              {!locked && (
++                <div className="grid grid-cols-3 gap-2">
++                  <Toggle pressed={a.admin_role === 'community'} disabled={change.isPending} className="px-1 text-xs" onClick={() => change.mutate({ id: a.id, r: 'community' })}>Komunitas</Toggle>
++                  <Toggle pressed={a.admin_role === 'operations'} disabled={change.isPending} className="px-1 text-xs" onClick={() => change.mutate({ id: a.id, r: 'operations' })}>Operasional</Toggle>
++                  <Button variant="danger" className="px-1 text-xs" disabled={change.isPending} onClick={() => window.confirm(`Cabut peran admin ${a.name}?`) && change.mutate({ id: a.id, r: null })}>Cabut</Button>
++                </div>
++              )}
++            </div>
++          )
++        })}
++      </Card>
++      <Card>
++        <p className="font-bold">Tambah admin</p>
++        <input className={inputCls} type="search" placeholder="Cari nama atau nomor warga" aria-label="Cari warga" value={q} onChange={(e) => setQ(e.target.value)} />
++        <div className="grid grid-cols-2 gap-2">
++          <Toggle pressed={role === 'community'} onClick={() => setRole('community')}>Komunitas</Toggle>
++          <Toggle pressed={role === 'operations'} onClick={() => setRole('operations')}>Operasional</Toggle>
++        </div>
++        {term.length >= 2 && candidates.length === 0 && <Notice>Tidak ada warga yang cocok.</Notice>}
++        {candidates.map((u) => (
++          <div key={u.id} className="flex items-center justify-between gap-3">
++            <p className="min-w-0 flex-1 truncate"><span className="font-semibold">{u.name}</span> <span className="text-sm text-tinta-lembut">· {formatPhoneDisplay(u.wa_number)}</span></p>
++            <Button className="px-3" disabled={change.isPending} onClick={() => window.confirm(`Jadikan ${u.name} ${ROLE_LABEL[role]}?`) && change.mutate({ id: u.id, r: role })}>Jadikan</Button>
++          </div>
++        ))}
++      </Card>
++    </div>
++  )
++}
+diff --git a/src/features/admin/AdminUsersTab.tsx b/src/features/admin/AdminUsersTab.tsx
+index a43c427..f3d909d 100644
+--- a/src/features/admin/AdminUsersTab.tsx
++++ b/src/features/admin/AdminUsersTab.tsx
+@@ -8,6 +8,7 @@ import { resetPin, setUserStatus, verifyPhone, type AdminProfile } from './api'
+ import { useAdminStores, useAdminUsers } from './hooks'
+ import { PIN_MESSAGE, friendlyError } from './logic'
+ import { useAuth } from '../auth/AuthContext'
++import { ROLE_LABEL, canResetPinOf, canSuspendUser } from '../../lib/permissions'
+ 
+ type Filter = 'all' | 'seller' | 'suspended' | 'unverified'
+ const FILTERS: { id: Filter; label: string }[] = [
+@@ -22,6 +23,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
+   const pin = useMutation({ mutationFn: () => resetPin(u.id), onSuccess: (p) => onPin(u, p), onError: (e: Error) => onError(e.message) })
+   const busy = verify.isPending || status.isPending || pin.isPending
+   const self = u.id === me
++  const role = useAuth().profile?.admin_role
+   return (
+     <Card>
+       <div>
+@@ -29,7 +31,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
+         <p className="text-sm text-tinta-lembut">{formatPhoneDisplay(u.wa_number)} · {formatAddress(u)}</p>
+       </div>
+       <div className="flex flex-wrap gap-1.5">
+-        {u.is_admin && <span className={tag}>Admin</span>}
++        {u.admin_role && <span className={tag}>{ROLE_LABEL[u.admin_role]}</span>}
+         {isSeller && <span className={tag}>Penjual</span>}
+         <span className={tag}>{u.phone_verified_at ? 'Terverifikasi' : 'Belum verifikasi'}</span>
+         {u.status === 'suspended' && <span className="rounded-md bg-marun-50 px-2 py-0.5 text-xs font-bold text-bahaya">Ditangguhkan</span>}
+@@ -37,8 +39,8 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
+       <div className="grid grid-cols-2 gap-2">
+         <a href={buildWaLink(u.wa_number, `Halo ${u.name}, ini admin Mall Dian Anyar.`)} target="_blank" rel="noreferrer" className="min-h-12 rounded-xl border border-garis bg-white px-3 py-3 text-center font-bold">Chat via WA</a>
+         {!u.phone_verified_at && <Button disabled={busy} onClick={() => verify.mutate()}>Verifikasi</Button>}
+-        <Button variant="ghost" disabled={busy} onClick={() => window.confirm(`Reset PIN ${u.name}? PIN lamanya tidak berlaku lagi.`) && pin.mutate()}>Reset PIN</Button>
+-        {!self && (u.status === 'active'
++        {canResetPinOf(role, u.admin_role) && <Button variant="ghost" disabled={busy} onClick={() => window.confirm(`Reset PIN ${u.name}? PIN lamanya tidak berlaku lagi.`) && pin.mutate()}>Reset PIN</Button>}
++        {!self && canSuspendUser(role, u.admin_role) && (u.status === 'active'
+           ? <Button variant="danger" disabled={busy} onClick={() => window.confirm(`Tangguhkan ${u.name}?`) && status.mutate('suspended')}>Tangguhkan</Button>
+           : <Button disabled={busy} onClick={() => status.mutate('active')}>Aktifkan lagi</Button>)}
+       </div>
+diff --git a/src/features/admin/api.ts b/src/features/admin/api.ts
+index c584ba2..6f066b2 100644
+--- a/src/features/admin/api.ts
++++ b/src/features/admin/api.ts
+@@ -39,7 +39,7 @@ export async function verifyPhone(userId: string) {
+ }
+ 
+ export async function setUserStatus(userId: string, status: 'active' | 'suspended') {
+-  check(await supabase.from('profiles').update({ status }).eq('id', userId).select().single())
++  check(await supabase.rpc('admin_set_user_status', { p_user: userId, p_status: status }))
+ }
+ 
+ export async function resetPin(userId: string): Promise<string> {
+@@ -65,3 +65,7 @@ export async function renameCategory(id: number, name: string) {
+ export async function deleteCategory(id: number) {
+   check(await supabase.from('categories').delete().eq('id', id).select())
+ }
++
++export async function setAdminRole(userId: string, role: 'community' | 'operations' | null) {
++  check(await supabase.rpc('admin_set_admin_role', { p_user: userId, p_role: role }))
++}
+diff --git a/src/features/admin/logic.ts b/src/features/admin/logic.ts
+index 56f85a6..3ec49ac 100644
+--- a/src/features/admin/logic.ts
++++ b/src/features/admin/logic.ts
+@@ -33,7 +33,9 @@ export function validateSettings(v: SettingsForm, normalize: (s: string) => stri
+ 
+ const MESSAGES: [string, string][] = [
+   ['OWNER_NOT_VERIFIED', 'Nomor penjual belum terverifikasi. Verifikasi dulu.'],
+-  ['FORBIDDEN', 'Hanya admin yang boleh melakukan ini.'],
++  ['FORBIDDEN', 'Peranmu tidak punya wewenang untuk aksi ini.'],
++  ['INVALID_ROLE', 'Peran tidak valid.'],
++  ['USER_NOT_FOUND', 'Pengguna tidak ditemukan.'],
+   ['violates foreign key', 'Kategori ini masih dipakai toko atau produk.'],
+   ['duplicate key', 'Data dengan nama itu sudah ada.'],
+ ]
+diff --git a/src/features/seller/SellerHomePage.tsx b/src/features/seller/SellerHomePage.tsx
+index afeeb4c..6a8b9a1 100644
+--- a/src/features/seller/SellerHomePage.tsx
++++ b/src/features/seller/SellerHomePage.tsx
+@@ -8,11 +8,12 @@ import { Card, Notice, Spinner, Toggle } from '../../components/ui'
+ import { setStoreOverride } from './api'
+ import { keys, useMyStore, useProducts } from './hooks'
+ import { invalidateCatalog } from '../catalog/invalidate'
++import { useSellerContacts, type SellerContact } from './contacts'
+ import type { Profile, Store } from '../../lib/types'
+ 
+ const linkBtn = 'min-h-12 rounded-xl px-4 py-3 text-center font-bold'
+ 
+-function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Profile; adminWa: string | null }) {
++function ApprovalNotice({ store, profile, contacts }: { store: Store; profile: Profile; contacts: SellerContact[] }) {
+   if (store.approval_status === 'approved') return null
+   if (store.approval_status === 'rejected') return <Notice tone="bad">Toko belum disetujui admin. Hubungi admin untuk info lebih lanjut.</Notice>
+   if (store.approval_status === 'suspended') return <Notice tone="bad">Toko sedang ditangguhkan admin.</Notice>
+@@ -21,12 +22,14 @@ function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Pr
+   return (
+     <Card>
+       <Notice tone="warn">Toko belum tampil. Penjual wajib warga perum, jadi nomormu perlu dikonfirmasi admin lewat WhatsApp.</Notice>
+-      {adminWa ? (
+-        <a className={`${linkBtn} bg-marun-700 text-emas-300`} href={buildWaLink(adminWa, text)} target="_blank" rel="noreferrer">
+-          Kirim konfirmasi ke admin via WhatsApp
+-        </a>
++      {contacts.length > 0 ? (
++        contacts.map((c) => (
++          <a key={c.wa_number} className={`${linkBtn} bg-marun-700 text-emas-300`} href={buildWaLink(c.wa_number, text)} target="_blank" rel="noreferrer">
++            Kirim konfirmasi ke {contacts.length > 1 ? c.name.split(' ')[0] : 'admin'} via WhatsApp
++          </a>
++        ))
+       ) : (
+-        <p className="text-sm text-tinta-lembut">Nomor admin belum diatur. Hubungi admin lewat grup perum.</p>
++        <p className="text-sm text-tinta-lembut">Kontak admin belum diatur. Hubungi admin lewat grup perum.</p>
+       )}
+     </Card>
+   )
+@@ -35,6 +38,7 @@ function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Pr
+ export default function SellerHomePage() {
+   const { profile } = useAuth()
+   const { data: settings } = usePublicSettings()
++  const contacts = useSellerContacts(settings?.admin_wa_number ?? null)
+   const { data: store, isLoading } = useMyStore(profile!.id)
+   const { data: products } = useProducts(store?.id)
+   const qc = useQueryClient()
+@@ -68,7 +72,7 @@ export default function SellerHomePage() {
+         <h1 className="text-2xl font-bold text-marun-700">{store.name}</h1>
+         <p className="text-sm text-tinta-lembut">{store.approval_status === 'approved' ? 'Toko tampil untuk pembeli' : 'Toko belum tampil'}</p>
+       </div>
+-      <ApprovalNotice store={store} profile={profile!} adminWa={settings?.admin_wa_number ?? null} />
++      <ApprovalNotice store={store} profile={profile!} contacts={contacts} />
+       <Card>
+         <div className="flex items-center justify-between gap-3">
+           <p className="font-bold">Status toko</p>
+diff --git a/src/features/seller/contacts.ts b/src/features/seller/contacts.ts
+new file mode 100644
+index 0000000..afb11e6
+--- /dev/null
++++ b/src/features/seller/contacts.ts
+@@ -0,0 +1,19 @@
++import { useQuery } from '@tanstack/react-query'
++import { supabase } from '../../lib/supabase'
++
++export interface SellerContact { name: string; wa_number: string }
++
++/** Kontak konfirmasi penjual = Admin Operasional yang aktif. Cadangan: nomor admin di Pengaturan. */
++export function useSellerContacts(fallbackWa: string | null): SellerContact[] {
++  const { data } = useQuery({
++    queryKey: ['seller-contacts'],
++    staleTime: 5 * 60_000,
++    queryFn: async () => {
++      const { data, error } = await supabase.rpc('get_seller_contacts')
++      if (error) throw error
++      return data as SellerContact[]
++    },
++  })
++  if (data && data.length > 0) return data
++  return fallbackWa ? [{ name: 'Admin', wa_number: fallbackWa }] : []
++}
+diff --git a/src/lib/permissions.test.ts b/src/lib/permissions.test.ts
+new file mode 100644
+index 0000000..c17ebec
+--- /dev/null
++++ b/src/lib/permissions.test.ts
+@@ -0,0 +1,38 @@
++import { describe, expect, it } from 'vitest'
++import { can, canResetPinOf, canSuspendUser } from './permissions'
++
++describe('permissions', () => {
++  it('semua admin boleh verifikasi dan menyetujui penjual', () => {
++    for (const r of ['owner', 'community', 'operations'] as const) {
++      expect(can(r, 'users.verify')).toBe(true)
++      expect(can(r, 'stores.approve')).toBe(true)
++    }
++  })
++  it('tangguhkan hanya owner dan komunitas', () => {
++    expect(can('operations', 'stores.suspend')).toBe(false)
++    expect(can('community', 'users.suspend')).toBe(true)
++  })
++  it('pengaturan sistem dan peran admin hanya owner', () => {
++    expect(can('community', 'settings.system')).toBe(false)
++    expect(can('community', 'admins.manage')).toBe(false)
++    expect(can('owner', 'admins.manage')).toBe(true)
++  })
++  it('bukan admin tidak bisa apa-apa', () => {
++    expect(can(null, 'users.verify')).toBe(false)
++    expect(can(undefined, 'stores.approve')).toBe(false)
++  })
++  it('reset PIN: akun admin hanya oleh owner, owner tidak bisa di-reset', () => {
++    expect(canResetPinOf('operations', null)).toBe(true)
++    expect(canResetPinOf('operations', 'community')).toBe(false)
++    expect(canResetPinOf('community', 'operations')).toBe(false)
++    expect(canResetPinOf('owner', 'operations')).toBe(true)
++    expect(canResetPinOf('owner', 'owner')).toBe(false)
++  })
++  it('tangguhkan pengguna: aturan sama untuk akun admin', () => {
++    expect(canSuspendUser('community', null)).toBe(true)
++    expect(canSuspendUser('community', 'operations')).toBe(false)
++    expect(canSuspendUser('owner', 'community')).toBe(true)
++    expect(canSuspendUser('owner', 'owner')).toBe(false)
++    expect(canSuspendUser('operations', null)).toBe(false)
++  })
++})
+diff --git a/src/lib/permissions.ts b/src/lib/permissions.ts
+new file mode 100644
+index 0000000..7302d1f
+--- /dev/null
++++ b/src/lib/permissions.ts
+@@ -0,0 +1,58 @@
++import type { AdminRole } from './types'
++
++/**
++ * Matriks wewenang admin. Ini hanya untuk menampilkan/menyembunyikan tombol di UI.
++ * Penegak sebenarnya ada di database (supabase/migrations/0006_admin_roles.sql) dan Edge Function.
++ * Kalau mengubah salah satu, ubah keduanya.
++ */
++export type Action =
++  | 'stores.approve'
++  | 'users.verify'
++  | 'users.resetPin'
++  | 'stores.suspend'
++  | 'users.suspend'
++  | 'settings.community'
++  | 'categories.manage'
++  | 'settings.system'
++  | 'admins.manage'
++
++const ALL: AdminRole[] = ['owner', 'community', 'operations']
++const MODERATORS: AdminRole[] = ['owner', 'community']
++
++const MATRIX: Record<Action, AdminRole[]> = {
++  'stores.approve': ALL,
++  'users.verify': ALL,
++  'users.resetPin': ALL,
++  'stores.suspend': MODERATORS,
++  'users.suspend': MODERATORS,
++  'settings.community': MODERATORS,
++  'categories.manage': MODERATORS,
++  'settings.system': ['owner'],
++  'admins.manage': ['owner'],
++}
++
++export const can = (role: AdminRole | null | undefined, action: Action): boolean => !!role && MATRIX[action].includes(role)
++
++/** Akun admin hanya bisa di-reset owner, dan akun owner tidak bisa di-reset lewat aplikasi. */
++export function canResetPinOf(role: AdminRole | null | undefined, target: AdminRole | null): boolean {
++  if (!can(role, 'users.resetPin')) return false
++  return target === null || (role === 'owner' && target !== 'owner')
++}
++
++/** Akun admin hanya bisa ditangguhkan owner, dan owner tidak bisa ditangguhkan. */
++export function canSuspendUser(role: AdminRole | null | undefined, target: AdminRole | null): boolean {
++  if (!can(role, 'users.suspend')) return false
++  return target === null || (role === 'owner' && target !== 'owner')
++}
++
++export const ROLE_LABEL: Record<AdminRole, string> = {
++  owner: 'Owner (Developer)',
++  community: 'Admin Komunitas',
++  operations: 'Admin Operasional',
++}
++
++export const ROLE_DESC: Record<AdminRole, string> = {
++  owner: 'Sistem, database, deployment, dan pengaturan peran admin.',
++  community: 'Mengelola komunitas dan membantu moderasi.',
++  operations: 'Membantu operasional dan koordinasi penjual.',
++}
+diff --git a/src/lib/types.ts b/src/lib/types.ts
+index 03e5478..a21322e 100644
+--- a/src/lib/types.ts
++++ b/src/lib/types.ts
+@@ -1,4 +1,6 @@
+ // Tulisan tangan sementara. Nanti diganti tipe hasil generate: `supabase gen types typescript`.
++export type AdminRole = 'owner' | 'community' | 'operations'
++
+ export interface Profile {
+   id: string
+   wa_number: string
+@@ -7,6 +9,7 @@ export interface Profile {
+   house_no: string
+   rt: string | null
+   is_admin: boolean
++  admin_role: AdminRole | null
+   status: 'active' | 'suspended'
+   phone_verified_at: string | null
+   must_change_pin: boolean
+diff --git a/supabase/functions/admin-reset-pin/index.ts b/supabase/functions/admin-reset-pin/index.ts
+index 9670a02..01e9934 100644
+--- a/supabase/functions/admin-reset-pin/index.ts
++++ b/supabase/functions/admin-reset-pin/index.ts
+@@ -20,16 +20,22 @@ Deno.serve(async (req) => {
+   const anon = Deno.env.get('SUPABASE_ANON_KEY')!
+   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+ 
+-  // 1. Pastikan pemanggil benar-benar admin (dicek di server, bukan dipercaya dari UI).
++  // 1. Pemanggil harus admin aktif (dicek di server, bukan dipercaya dari UI).
+   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } })
+   const { data: auth } = await caller.auth.getUser()
+   if (!auth.user) return json({ error: 'UNAUTHENTICATED' }, 401)
+-  const { data: me } = await caller.from('profiles').select('is_admin').eq('id', auth.user.id).maybeSingle()
+-  if (!me?.is_admin) return json({ error: 'FORBIDDEN' }, 403)
++  const { data: me } = await caller.from('profiles').select('admin_role, status').eq('id', auth.user.id).maybeSingle()
++  if (!me?.admin_role || me.status !== 'active') return json({ error: 'FORBIDDEN' }, 403)
+ 
+-  // 2. Reset.
+   const { userId } = await req.json().catch(() => ({}))
+   if (typeof userId !== 'string') return json({ error: 'INVALID_INPUT' }, 400)
++
++  // 2. Cek target. Admin boleh membaca semua profil lewat RLS.
++  const { data: target } = await caller.from('profiles').select('admin_role').eq('id', userId).maybeSingle()
++  if (!target) return json({ error: 'USER_NOT_FOUND' }, 404)
++  if (target.admin_role && (me.admin_role !== 'owner' || target.admin_role === 'owner')) return json({ error: 'FORBIDDEN' }, 403)
++
++  // 3. Reset.
+   const admin = createClient(url, service)
+   const pin = randomPin()
+   const { error } = await admin.auth.admin.updateUserById(userId, { password: pin })
+diff --git a/supabase/migrations/0006_admin_roles.sql b/supabase/migrations/0006_admin_roles.sql
+new file mode 100644
+index 0000000..d33fe5d
+--- /dev/null
++++ b/supabase/migrations/0006_admin_roles.sql
+@@ -0,0 +1,155 @@
++-- Pemisahan peran admin (0006).
++--   owner      : pengembang sistem (semua wewenang, termasuk mengatur peran admin)
++--   community  : Admin Komunitas (moderasi, pengaturan pendaftaran, kategori)
++--   operations : Admin Operasional (verifikasi dan persetujuan penjual, bantu reset PIN)
++-- Perubahan bersifat menambah; kolom is_admin tetap ada (dihitung otomatis dari admin_role).
++
++alter table public.profiles
++  add column admin_role text check (admin_role in ('owner', 'community', 'operations'));
++
++-- Admin yang sudah ada sebelum pemisahan peran dijadikan owner. Dijalankan SEBELUM trigger sinkronisasi dibuat.
++update public.profiles set admin_role = 'owner' where is_admin and admin_role is null;
++
++-- ---------- Fungsi peran ----------
++create function public.current_admin_role() returns text
++language sql stable security definer set search_path = public as $$
++  select admin_role from public.profiles where id = auth.uid() and status = 'active'
++$$;
++
++-- Memakai ulang nama is_admin() supaya semua kebijakan RLS yang sudah ada otomatis ikut sadar peran.
++create or replace function public.is_admin() returns boolean
++language sql stable security definer set search_path = public as $$
++  select public.current_admin_role() is not null
++$$;
++
++create function public.is_owner() returns boolean
++language sql stable security definer set search_path = public as $$
++  select coalesce(public.current_admin_role() = 'owner', false)
++$$;
++
++create function public.can_moderate() returns boolean
++language sql stable security definer set search_path = public as $$
++  select coalesce(public.current_admin_role() in ('owner', 'community'), false)
++$$;
++
++-- ---------- Penjaga kolom ----------
++-- Pembatasan hanya berlaku saat dipanggil langsung oleh pengguna aplikasi (role authenticated/anon).
++-- SQL Editor, service role, dan fungsi security definer di bawah ini tidak dibatasi.
++create or replace function public.profiles_guard() returns trigger language plpgsql as $$
++begin
++  if current_user in ('authenticated', 'anon') then
++    new.id := old.id;
++    new.wa_number := old.wa_number;
++    new.is_admin := old.is_admin;
++    new.admin_role := old.admin_role;
++    new.status := old.status;
++    new.phone_verified_at := old.phone_verified_at;
++    new.verified_by := old.verified_by;
++    new.must_change_pin := old.must_change_pin;
++  end if;
++  return new;
++end $$;
++
++create or replace function public.stores_guard() returns trigger language plpgsql as $$
++begin
++  if current_user in ('authenticated', 'anon') then
++    if tg_op = 'INSERT' then
++      new.approval_status := 'pending';
++    else
++      new.approval_status := old.approval_status;
++      new.owner_id := old.owner_id;
++    end if;
++  end if;
++  return new;
++end $$;
++
++-- Menjaga is_admin selalu selaras dengan admin_role. Nama trigger sengaja berurutan setelah profiles_guard_trg.
++create function public.profiles_sync_admin() returns trigger language plpgsql as $$
++begin
++  if tg_op = 'UPDATE' and old.is_admin and not new.is_admin and new.admin_role is not distinct from old.admin_role then
++    new.admin_role := null;  -- dicabut lewat is_admin = false
++  end if;
++  if new.admin_role is null and new.is_admin and (tg_op = 'INSERT' or not old.is_admin) then
++    new.admin_role := 'operations';  -- bila hanya is_admin yang diisi, beri hak paling kecil
++  end if;
++  new.is_admin := new.admin_role is not null;
++  return new;
++end $$;
++create trigger profiles_sync_admin_trg before insert or update on public.profiles
++  for each row execute function public.profiles_sync_admin();
++
++-- Saklar sistem hanya boleh diubah owner.
++create function public.settings_guard() returns trigger language plpgsql as $$
++begin
++  if current_user in ('authenticated', 'anon') and not public.is_owner() then
++    if new.require_seller_residency is distinct from old.require_seller_residency
++       or new.require_phone_otp is distinct from old.require_phone_otp then
++      raise exception 'FORBIDDEN';
++    end if;
++  end if;
++  return new;
++end $$;
++create trigger settings_guard_trg before update on public.community_settings
++  for each row execute function public.settings_guard();
++
++-- ---------- Kebijakan: pengaturan komunitas dan kategori khusus owner + komunitas ----------
++drop policy settings_admin_all on public.community_settings;
++create policy settings_moderators_all on public.community_settings
++  for all to authenticated using (public.can_moderate()) with check (public.can_moderate());
++
++drop policy categories_admin_write on public.categories;
++create policy categories_moderators_write on public.categories
++  for all to authenticated using (public.can_moderate()) with check (public.can_moderate());
++
++-- ---------- Fungsi admin ----------
++create or replace function public.admin_set_store_approval(p_store uuid, p_status text) returns void
++language plpgsql security definer set search_path = public as $$
++declare v_owner uuid;
++begin
++  if not public.is_admin() then raise exception 'FORBIDDEN'; end if;
++  if p_status not in ('approved', 'rejected', 'suspended', 'pending') then raise exception 'INVALID_STATUS'; end if;
++  if p_status = 'suspended' and not public.can_moderate() then raise exception 'FORBIDDEN'; end if;
++  select owner_id into v_owner from public.stores where id = p_store;
++  if v_owner is null then raise exception 'STORE_NOT_FOUND'; end if;
++  if p_status = 'approved'
++     and (select phone_verified_at from public.profiles where id = v_owner) is null then
++    raise exception 'OWNER_NOT_VERIFIED';
++  end if;
++  update public.stores set approval_status = p_status where id = p_store;
++end $$;
++
++-- Tangguhkan / aktifkan pengguna: owner dan komunitas; admin lain hanya bisa diubah owner.
++create function public.admin_set_user_status(p_user uuid, p_status text) returns void
++language plpgsql security definer set search_path = public as $$
++declare v_target text;
++begin
++  if not public.can_moderate() then raise exception 'FORBIDDEN'; end if;
++  if p_status not in ('active', 'suspended') then raise exception 'INVALID_STATUS'; end if;
++  if p_user = auth.uid() then raise exception 'FORBIDDEN'; end if;
++  select admin_role into v_target from public.profiles where id = p_user;
++  if v_target = 'owner' or (v_target is not null and not public.is_owner()) then raise exception 'FORBIDDEN'; end if;
++  update public.profiles set status = p_status where id = p_user;
++end $$;
++
++-- Beri / cabut peran admin (hanya owner). Peran owner hanya lewat SQL oleh developer.
++create function public.admin_set_admin_role(p_user uuid, p_role text) returns void
++language plpgsql security definer set search_path = public as $$
++declare v_target text;
++begin
++  if not public.is_owner() then raise exception 'FORBIDDEN'; end if;
++  if p_role is not null and p_role not in ('community', 'operations') then raise exception 'INVALID_ROLE'; end if;
++  if p_user = auth.uid() then raise exception 'FORBIDDEN'; end if;
++  select admin_role into v_target from public.profiles where id = p_user;
++  if not found then raise exception 'USER_NOT_FOUND'; end if;
++  if v_target = 'owner' then raise exception 'FORBIDDEN'; end if;
++  update public.profiles set admin_role = p_role where id = p_user;
++end $$;
++
++-- Kontak konfirmasi penjual: otomatis Admin Operasional yang aktif (tidak lagi satu nomor tetap).
++create function public.get_seller_contacts() returns table (name text, wa_number text)
++language sql stable security definer set search_path = public as $$
++  select p.name, p.wa_number from public.profiles p
++  where p.admin_role = 'operations' and p.status = 'active' order by p.created_at
++$$;
++revoke all on function public.get_seller_contacts() from public, anon;
++grant execute on function public.get_seller_contacts() to authenticated;
+diff --git a/supabase/tests/roles_test.sql b/supabase/tests/roles_test.sql
+new file mode 100644
+index 0000000..583cd8f
+--- /dev/null
++++ b/supabase/tests/roles_test.sql
+@@ -0,0 +1,123 @@
++-- Uji peran admin terhadap database nyata. Jalankan setelah migrasi 0001-0006 dan data uji (lihat README).
++-- set peran lewat SQL (seperti developer)
++update profiles set admin_role='community' where name='Admin Komunitas';
++update profiles set admin_role='operations' where name in ('Ops Satu','Ops Dua');
++select name,is_admin,admin_role from profiles where is_admin order by name;
++
++create function pg_temp.exec_as(uid uuid, q text) returns text language plpgsql as $f$
++begin
++  perform set_config('request.jwt.claim.sub', uid::text, true);
++  execute 'set local role authenticated';
++  execute q;
++  execute 'reset role';
++  return 'ok';
++exception when others then
++  execute 'reset role';
++  return 'ERR: ' || sqlerrm;
++end $f$;
++create function pg_temp.chk(label text, ok boolean, detail text default '') returns void language plpgsql as $f$
++begin raise notice '% % %', case when ok then 'PASS' else 'FAIL' end, label, detail; end $f$;
++
++do $do$
++declare o uuid; c uuid; p1 uuid; p2 uuid; s uuid; b uuid; st uuid; r text; v text; n int;
++begin
++  select id into o from profiles where name='Owner Dev';       select id into c  from profiles where name='Admin Komunitas';
++  select id into p1 from profiles where name='Ops Satu';       select id into p2 from profiles where name='Ops Dua';
++  select id into s from profiles where name='Penjual';         select id into b  from profiles where name='Pembeli';
++
++  -- 1-2 pembeli tidak bisa mengangkat diri / mengubah kolom sensitif
++  r := pg_temp.exec_as(b, $q$update public.profiles set is_admin=true, admin_role='owner', status='active', phone_verified_at=now() where id=auth.uid()$q$);
++  select admin_role into v from profiles where id=b; select count(*) into n from profiles where id=b and phone_verified_at is not null;
++  perform pg_temp.chk('1 pembeli tidak bisa promosi diri', v is null and not (select is_admin from profiles where id=b), 'hasil='||r);
++  perform pg_temp.chk('2 pembeli tidak bisa memverifikasi dirinya', n=0);
++
++  -- 3 ops tidak bisa mengatur peran
++  r := pg_temp.exec_as(p1, format($q$select public.admin_set_admin_role(%L,'community')$q$, b));
++  perform pg_temp.chk('3 ops ditolak mengatur peran', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_admin_role(%L,'operations')$q$, b));
++  perform pg_temp.chk('3b komunitas ditolak mengatur peran', r like '%FORBIDDEN%', r);
++
++  -- 4 owner beri dan cabut peran
++  r := pg_temp.exec_as(o, format($q$select public.admin_set_admin_role(%L,'operations')$q$, b));
++  perform pg_temp.chk('4 owner bisa beri peran', r='ok' and (select is_admin and admin_role='operations' from profiles where id=b), r);
++  r := pg_temp.exec_as(o, format($q$select public.admin_set_admin_role(%L,null)$q$, b));
++  perform pg_temp.chk('4b owner bisa cabut peran', r='ok' and (select not is_admin and admin_role is null from profiles where id=b), r);
++  r := pg_temp.exec_as(o, format($q$select public.admin_set_admin_role(%L,'owner')$q$, b));
++  perform pg_temp.chk('5 peran owner tidak bisa diberikan lewat aplikasi', r like '%INVALID_ROLE%', r);
++  r := pg_temp.exec_as(o, format($q$select public.admin_set_admin_role(%L,null)$q$, o));
++  perform pg_temp.chk('6 owner tidak bisa mencabut dirinya', r like '%FORBIDDEN%', r);
++
++  -- 7-10 tangguhkan pengguna
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_user_status(%L,'suspended')$q$, b));
++  perform pg_temp.chk('7 komunitas bisa tangguhkan pembeli', r='ok' and (select status='suspended' from profiles where id=b), r);
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_user_status(%L,'active')$q$, b));
++  perform pg_temp.chk('7b ... dan aktifkan lagi', r='ok' and (select status='active' from profiles where id=b), r);
++  r := pg_temp.exec_as(p1, format($q$select public.admin_set_user_status(%L,'suspended')$q$, b));
++  perform pg_temp.chk('8 ops ditolak menangguhkan', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_user_status(%L,'suspended')$q$, p2));
++  perform pg_temp.chk('9 komunitas tidak bisa tangguhkan admin lain', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_user_status(%L,'suspended')$q$, o));
++  perform pg_temp.chk('10 komunitas tidak bisa tangguhkan owner', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(o, format($q$select public.admin_set_user_status(%L,'suspended')$q$, p2));
++  perform pg_temp.chk('9b owner bisa tangguhkan admin', r='ok', r);
++  r := pg_temp.exec_as(p2, format($q$select public.admin_verify_phone(%L)$q$, s));
++  perform pg_temp.chk('9c admin yang ditangguhkan kehilangan wewenang', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(o, format($q$select public.get_seller_contacts()$q$));
++  perform pg_temp.chk('18 kontak penjual hanya ops yang aktif', (select count(*) from public.get_seller_contacts() ) >= 0);
++  perform pg_temp.exec_as(o, format($q$select public.admin_set_user_status(%L,'active')$q$, p2));
++
++  -- 11-14 toko
++  insert into stores (owner_id,name,slug,wa_number,category_id) values (s,'Warung Uji','warung-uji','6281200000005',2) returning id into st; -- sebagai postgres (bypass)
++  update stores set approval_status='pending' where id=st;
++  r := pg_temp.exec_as(s, $q$insert into public.stores (owner_id,name,slug,wa_number,approval_status) values (auth.uid(),'Toko Nakal','toko-nakal','6281200000005','approved')$q$);
++  select approval_status into v from stores where slug='toko-nakal';
++  perform pg_temp.chk('11 penjual tidak bisa membuat toko langsung approved', r='ok' and v='pending', 'status='||v);
++  r := pg_temp.exec_as(s, format($q$update public.stores set approval_status='approved' where id=%L$q$, st));
++  perform pg_temp.chk('13 penjual tidak bisa menyetujui tokonya', (select approval_status from stores where id=st)='pending', r);
++  r := pg_temp.exec_as(p1, format($q$update public.stores set approval_status='approved' where id=%L$q$, st));
++  perform pg_temp.chk('14 admin tidak bisa menyetujui lewat update langsung', (select approval_status from stores where id=st)='pending', r);
++  r := pg_temp.exec_as(p1, format($q$select public.admin_set_store_approval(%L,'approved')$q$, st));
++  perform pg_temp.chk('12 setujui sebelum verifikasi ditolak', r like '%OWNER_NOT_VERIFIED%', r);
++  r := pg_temp.exec_as(p1, format($q$select public.admin_verify_phone(%L)$q$, s));
++  perform pg_temp.chk('12b ops bisa verifikasi nomor', r='ok' and (select verified_by='admin' from profiles where id=s), r);
++  r := pg_temp.exec_as(p1, format($q$select public.admin_set_store_approval(%L,'approved')$q$, st));
++  perform pg_temp.chk('12c ops bisa menyetujui toko', r='ok' and (select approval_status='approved' from stores where id=st), r);
++  r := pg_temp.exec_as(p1, format($q$select public.admin_set_store_approval(%L,'suspended')$q$, st));
++  perform pg_temp.chk('12d ops tidak bisa menangguhkan toko', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(c, format($q$select public.admin_set_store_approval(%L,'suspended')$q$, st));
++  perform pg_temp.chk('12e komunitas bisa menangguhkan toko', r='ok', r);
++  perform pg_temp.chk('12f pembeli hanya melihat toko approved', (select count(*) from stores where approval_status='approved')=0);
++
++  -- 15-17 pengaturan dan kategori
++  r := pg_temp.exec_as(c, $q$update public.community_settings set invite_code='KODE-BARU-1' where id=1$q$);
++  perform pg_temp.chk('15 komunitas bisa ganti kode undangan', (select invite_code from community_settings)='KODE-BARU-1', r);
++  r := pg_temp.exec_as(c, $q$update public.community_settings set require_phone_otp=true where id=1$q$);
++  perform pg_temp.chk('15b komunitas ditolak mengubah saklar sistem', r like '%FORBIDDEN%', r);
++  r := pg_temp.exec_as(o, $q$update public.community_settings set require_phone_otp=true where id=1$q$);
++  perform pg_temp.chk('15c owner bisa mengubah saklar sistem', r='ok' and (select require_phone_otp from community_settings), r);
++  r := pg_temp.exec_as(p1, $q$update public.community_settings set invite_code='RETAS-OPS' where id=1$q$);
++  perform pg_temp.chk('16 ops tidak bisa mengubah pengaturan komunitas', (select invite_code from community_settings)='KODE-BARU-1', r);
++  r := pg_temp.exec_as(p1, $q$insert into public.categories (name) values ('X-ops')$q$);
++  perform pg_temp.chk('17 ops tidak bisa menambah kategori', r like '%row-level security%' or r like '%permission%', r);
++  r := pg_temp.exec_as(c, $q$insert into public.categories (name) values ('X-komunitas')$q$);
++  perform pg_temp.chk('17b komunitas bisa menambah kategori', r='ok', r);
++
++  -- 19-20 jalur SQL developer
++  update profiles set is_admin=true where id=b;
++  perform pg_temp.chk('19 is_admin=true lewat SQL memberi peran terkecil', (select admin_role='operations' from profiles where id=b));
++  update profiles set is_admin=false where id=b;
++  perform pg_temp.chk('19b is_admin=false mencabut peran', (select admin_role is null and not is_admin from profiles where id=b));
++  update profiles set admin_role='community' where id=b; update profiles set admin_role=null where id=b;
++  perform pg_temp.chk('20 admin_role=null mencabut', (select not is_admin from profiles where id=b));
++
++  -- 21 pendaftaran dengan kode salah ditolak
++  begin
++    insert into auth.users (id,email,raw_user_meta_data) values (gen_random_uuid(),'z@x','{"name":"Zed","wa_number":"6281200000099","block":"A","house_no":"1","invite_code":"SALAH"}');
++    perform pg_temp.chk('21 kode undangan salah ditolak', false);
++  exception when others then perform pg_temp.chk('21 kode undangan salah ditolak', sqlerrm like '%INVALID_INVITE_CODE%', sqlerrm);
++  end;
++end $do$;
++
++-- kontak penjual (dipanggil sebagai penjual)
++begin; set local role authenticated; select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000005',true);
++select * from public.get_seller_contacts(); rollback;
+diff --git a/supabase/tests/stubs.sql b/supabase/tests/stubs.sql
+new file mode 100644
+index 0000000..ae7212c
+--- /dev/null
++++ b/supabase/tests/stubs.sql
+@@ -0,0 +1,17 @@
++-- Kerangka Supabase palsu (auth, storage, role) supaya migrasi bisa diuji di Postgres lokal biasa. Bukan untuk Supabase asli.
++do $$ begin
++  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
++  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
++  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
++end $$;
++create schema auth;
++create table auth.users (id uuid primary key default gen_random_uuid(), email text, raw_user_meta_data jsonb);
++create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
++create schema storage;
++create table storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]);
++create table storage.objects (id uuid default gen_random_uuid(), bucket_id text, name text);
++alter table storage.objects enable row level security;
++create function storage.foldername(name text) returns text[] language sql as $$ select string_to_array(name,'/') $$;
++grant usage on schema public, auth to anon, authenticated, service_role;
++alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
++alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;

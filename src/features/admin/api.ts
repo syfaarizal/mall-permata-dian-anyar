@@ -39,7 +39,7 @@ export async function verifyPhone(userId: string) {
 }
 
 export async function setUserStatus(userId: string, status: 'active' | 'suspended') {
-  check(await supabase.from('profiles').update({ status }).eq('id', userId).select().single())
+  check(await supabase.rpc('admin_set_user_status', { p_user: userId, p_status: status }))
 }
 
 export async function resetPin(userId: string): Promise<string> {
@@ -64,4 +64,8 @@ export async function renameCategory(id: number, name: string) {
 }
 export async function deleteCategory(id: number) {
   check(await supabase.from('categories').delete().eq('id', id).select())
+}
+
+export async function setAdminRole(userId: string, role: 'community' | 'operations' | null) {
+  check(await supabase.rpc('admin_set_admin_role', { p_user: userId, p_role: role }))
 }

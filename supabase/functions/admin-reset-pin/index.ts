@@ -20,16 +20,22 @@ Deno.serve(async (req) => {
   const anon = Deno.env.get('SUPABASE_ANON_KEY')!
   const service = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-  // 1. Pastikan pemanggil benar-benar admin (dicek di server, bukan dipercaya dari UI).
+  // 1. Pemanggil harus admin aktif (dicek di server, bukan dipercaya dari UI).
   const caller = createClient(url, anon, { global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } } })
   const { data: auth } = await caller.auth.getUser()
   if (!auth.user) return json({ error: 'UNAUTHENTICATED' }, 401)
-  const { data: me } = await caller.from('profiles').select('is_admin').eq('id', auth.user.id).maybeSingle()
-  if (!me?.is_admin) return json({ error: 'FORBIDDEN' }, 403)
+  const { data: me } = await caller.from('profiles').select('admin_role, status').eq('id', auth.user.id).maybeSingle()
+  if (!me?.admin_role || me.status !== 'active') return json({ error: 'FORBIDDEN' }, 403)
 
-  // 2. Reset.
   const { userId } = await req.json().catch(() => ({}))
   if (typeof userId !== 'string') return json({ error: 'INVALID_INPUT' }, 400)
+
+  // 2. Cek target. Admin boleh membaca semua profil lewat RLS.
+  const { data: target } = await caller.from('profiles').select('admin_role').eq('id', userId).maybeSingle()
+  if (!target) return json({ error: 'USER_NOT_FOUND' }, 404)
+  if (target.admin_role && (me.admin_role !== 'owner' || target.admin_role === 'owner')) return json({ error: 'FORBIDDEN' }, 403)
+
+  // 3. Reset.
   const admin = createClient(url, service)
   const pin = randomPin()
   const { error } = await admin.auth.admin.updateUserById(userId, { password: pin })
