@@ -20,14 +20,13 @@ export function parseBlocks(input: string): string[] {
 
 export interface SettingsForm {
   invite_code: string
-  valid_blocks: string
+  block_suggestions: string
   admin_wa_number: string
 }
 
 export function validateSettings(v: SettingsForm, normalize: (s: string) => string | null): Record<string, string> {
   const e: Record<string, string> = {}
   if (v.invite_code.trim().length < 6) e.invite_code = 'Kode undangan minimal 6 karakter.'
-  if (parseBlocks(v.valid_blocks).length === 0) e.valid_blocks = 'Isi minimal satu blok.'
   if (v.admin_wa_number.trim() && !normalize(v.admin_wa_number)) e.admin_wa_number = 'Nomor WhatsApp admin tidak valid.'
   return e
 }

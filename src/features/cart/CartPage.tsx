@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { formatRupiah } from '../../lib/format'
+import { formatAddress } from '../../lib/address'
 import { useNow } from '../../lib/now'
 import { getStoreStatus } from '../../lib/storeStatus'
 import { Button, Card, Field, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
@@ -38,7 +39,7 @@ export default function CartPage() {
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-bold">Antar ke</p>
-            <p className="text-sm text-tinta-lembut">Blok {profile?.block} No. {profile?.house_no} · a.n. {profile?.name}</p>
+            <p className="text-sm text-tinta-lembut">{profile ? formatAddress(profile) : ''} · a.n. {profile?.name}</p>
           </div>
           <Link to="/akun" className="min-h-11 rounded-xl border border-garis px-3 py-2.5 font-semibold">Ubah</Link>
         </div>

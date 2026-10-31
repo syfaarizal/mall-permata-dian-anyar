@@ -44,7 +44,7 @@ export default function OrderConfirmPage() {
         items: rows.map((r) => ({ name: r.product.name, qty: r.qty, price: r.product.price })),
         note: cart.meta[storeId]?.note,
         payment: resolvePayment(store, cart.meta[storeId]?.payment),
-        address: { name: profile.name, block: profile.block, houseNo: profile.house_no },
+        address: { name: profile.name, block: profile.block, house_no: profile.house_no, rt: profile.rt },
       }
       const message = buildCartMessage(input, getStoreStatus(store, now).canDeliver ? 'antar' : 'ambil')
       live = { store, rows, input, message, link: buildWaLink(store.wa_number, message) }

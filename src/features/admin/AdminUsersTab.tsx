@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
 import { formatPhoneDisplay } from '../../lib/phone'
+import { formatAddress } from '../../lib/address'
 import { buildWaLink } from '../../lib/whatsapp'
 import { resetPin, setUserStatus, verifyPhone, type AdminProfile } from './api'
 import { useAdminStores, useAdminUsers } from './hooks'
@@ -25,7 +26,7 @@ function UserItem({ u, isSeller, me, onDone, onError, onPin }: { u: AdminProfile
     <Card>
       <div>
         <p className="font-bold">{u.name}</p>
-        <p className="text-sm text-tinta-lembut">{formatPhoneDisplay(u.wa_number)} · Blok {u.block} No. {u.house_no}</p>
+        <p className="text-sm text-tinta-lembut">{formatPhoneDisplay(u.wa_number)} · {formatAddress(u)}</p>
       </div>
       <div className="flex flex-wrap gap-1.5">
         {u.is_admin && <span className={tag}>Admin</span>}

@@ -26,6 +26,7 @@ npm test                  # tes fungsi inti
 1. Buat proyek di supabase.com.
 2. SQL Editor: jalankan berurutan `supabase/migrations/0001_schema.sql`, `0002_functions.sql`, `0003_rls_storage.sql`, lalu `supabase/seed.sql`.
    (Atau pakai Supabase CLI: `supabase db push`.)
+   Migrasi lanjutan: `0004_admin_panel.sql` (panel admin), `0005_alamat_rt.sql` (blok bebas teks + kolom RT).
 3. Authentication → Providers → Email: aktif, **matikan "Confirm email"**. Password minimal 6 karakter (PIN 6 angka).
 4. Ganti kode undangan: `update community_settings set invite_code = 'KODE-ACAK-PANJANG';` (pakai kode panjang supaya tidak mudah ditebak).
 5. Jadikan diri sendiri admin (setelah daftar lewat aplikasi):
@@ -62,6 +63,11 @@ supabase/       migrasi SQL (urut), seed
 - Warna tema hanya di `src/index.css` (`@theme`).
 - Perubahan tabel selalu lewat file migrasi baru (`0004_...sql`), jangan edit via dashboard saja.
 - Aturan akses ada di RLS, bukan hanya di UI. Setelah ubah skema: `supabase gen types typescript` → ganti `src/lib/types.ts`.
+
+## Alamat antar
+Blok bebas teks (mis. "C3", "NP4"), tidak dibatasi daftar. Daftar blok di pengaturan admin
+sekarang hanya **saran** yang muncul di form. RT opsional, disimpan sebagai "RT 15".
+Alamat lengkap ditampilkan di beranda, keranjang, pesan WhatsApp, dan panel admin.
 
 ## Panel admin (tahap 7)
 Buka `/admin` (tautan ada di halaman Akun untuk admin). Persetujuan toko, verifikasi nomor, reset PIN, pengaturan komunitas, dan kategori semua lewat panel ini.

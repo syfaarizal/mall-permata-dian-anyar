@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthContext'
 import { useNow } from '../../lib/now'
 import { getStoreStatus } from '../../lib/storeStatus'
 import { formatRupiah } from '../../lib/format'
+import { formatAddress } from '../../lib/address'
 import { Button, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
 import { cartActions } from '../cart/cartStore'
 import { lastOrderOf, readHistory, topStores } from '../cart/history'
@@ -71,7 +72,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col gap-4">
       <Link to="/akun" className="text-sm text-tinta-lembut">
-        Diantar ke <span className="font-bold text-tinta">Blok {profile?.block} No. {profile?.house_no} ▾</span>
+        Diantar ke <span className="font-bold text-tinta">{profile ? formatAddress(profile) : '—'} ▾</span>
       </Link>
       <input className={inputCls} type="search" placeholder="Cari nasi, galon, gas…" aria-label="Cari produk" value={text} onChange={(e) => setText(e.target.value)} />
 

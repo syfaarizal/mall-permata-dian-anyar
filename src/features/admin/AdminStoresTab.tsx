@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Button, Card, Notice, Spinner, Toggle } from '../../components/ui'
 import { buildWaLink } from '../../lib/whatsapp'
+import { formatAddress } from '../../lib/address'
 import { setStoreApproval, verifyPhone, type AdminStore } from './api'
 import { useAdminStores } from './hooks'
 import { friendlyError } from './logic'
@@ -24,7 +25,7 @@ function StoreItem({ s, onDone, onError }: { s: AdminStore; onDone: () => void; 
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-bold">{s.name}</p>
-          <p className="text-sm text-tinta-lembut">{s.owner ? `${s.owner.name} · Blok ${s.owner.block} No. ${s.owner.house_no}` : 'Pemilik tidak ditemukan'}</p>
+          <p className="text-sm text-tinta-lembut">{s.owner ? `${s.owner.name} · ${formatAddress(s.owner)}` : 'Pemilik tidak ditemukan'}</p>
         </div>
         <span className={`flex-none text-xs font-bold ${verified ? 'text-ok' : 'text-peringatan'}`}>{verified ? 'Nomor terverifikasi ✓' : 'Nomor belum terverifikasi'}</span>
       </div>

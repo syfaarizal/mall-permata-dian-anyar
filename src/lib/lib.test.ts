@@ -88,7 +88,7 @@ describe('buildOrderMessage', () => {
     ],
     note: 'tidak pakai sambal',
     payment: 'qris',
-    address: { name: 'Syifa', block: 'C', houseNo: '12' },
+    address: { name: 'Syifa', block: 'C', house_no: '12' },
   })
   it('berformat konsisten', () => {
     expect(msg).toBe(

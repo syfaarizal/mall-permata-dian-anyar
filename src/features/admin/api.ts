@@ -3,13 +3,13 @@ import type { ApprovalStatus, Category, Profile, Store } from '../../lib/types'
 
 export type AdminProfile = Profile & { created_at: string; verified_by: 'admin' | 'otp' | null }
 export type AdminStore = Store & {
-  owner: Pick<Profile, 'id' | 'name' | 'block' | 'house_no' | 'wa_number' | 'phone_verified_at'> | null
+  owner: Pick<Profile, 'id' | 'name' | 'block' | 'house_no' | 'rt' | 'wa_number' | 'phone_verified_at'> | null
 }
 export interface CommunitySettings {
   id: 1
   invite_code: string
   registration_open: boolean
-  valid_blocks: string[]
+  block_suggestions: string[]
   admin_wa_number: string | null
   require_seller_residency: boolean
   require_phone_otp: boolean
@@ -22,7 +22,7 @@ function check<T>(r: { data: T | null; error: { message: string } | null }): T {
 
 export async function fetchAdminStores(): Promise<AdminStore[]> {
   return check(
-    await supabase.from('stores').select('*, owner:profiles!owner_id(id,name,block,house_no,wa_number,phone_verified_at)').order('created_at', { ascending: false }),
+    await supabase.from('stores').select('*, owner:profiles!owner_id(id,name,block,house_no,rt,wa_number,phone_verified_at)').order('created_at', { ascending: false }),
   ) as AdminStore[]
 }
 

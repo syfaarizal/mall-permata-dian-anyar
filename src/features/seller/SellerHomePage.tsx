@@ -17,7 +17,7 @@ function ApprovalNotice({ store, profile, adminWa }: { store: Store; profile: Pr
   if (store.approval_status === 'rejected') return <Notice tone="bad">Toko belum disetujui admin. Hubungi admin untuk info lebih lanjut.</Notice>
   if (store.approval_status === 'suspended') return <Notice tone="bad">Toko sedang ditangguhkan admin.</Notice>
   if (profile.phone_verified_at) return <Notice>Nomormu sudah terverifikasi. Toko tampil setelah admin menyetujui.</Notice>
-  const text = buildSellerVerifyMessage({ storeName: store.name, name: profile.name, block: profile.block, houseNo: profile.house_no, waNumber: profile.wa_number })
+  const text = buildSellerVerifyMessage({ storeName: store.name, name: profile.name, block: profile.block, house_no: profile.house_no, rt: profile.rt, waNumber: profile.wa_number })
   return (
     <Card>
       <Notice tone="warn">Toko belum tampil. Penjual wajib warga perum, jadi nomormu perlu dikonfirmasi admin lewat WhatsApp.</Notice>

@@ -5,6 +5,7 @@ export interface Profile {
   name: string
   block: string
   house_no: string
+  rt: string | null
   is_admin: boolean
   status: 'active' | 'suspended'
   phone_verified_at: string | null
@@ -13,7 +14,7 @@ export interface Profile {
 
 export interface PublicSettings {
   registration_open: boolean
-  valid_blocks: string[]
+  block_suggestions: string[]
   admin_wa_number: string | null
 }
 

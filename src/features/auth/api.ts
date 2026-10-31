@@ -1,5 +1,6 @@
 import { supabase } from '../../lib/supabase'
 import { normalizePhone, phoneToAuthEmail } from '../../lib/phone'
+import { normalizeBlock, normalizeRt } from '../../lib/address'
 
 export class AuthError extends Error {}
 
@@ -8,6 +9,7 @@ export interface RegisterInput {
   wa: string
   block: string
   houseNo: string
+  rt?: string
   inviteCode: string
   pin: string
 }
@@ -29,7 +31,14 @@ export async function register(input: RegisterInput) {
     email: phoneToAuthEmail(wa),
     password: input.pin,
     options: {
-      data: { name: input.name.trim(), wa_number: wa, block: input.block, house_no: input.houseNo.trim(), invite_code: input.inviteCode },
+      data: {
+        name: input.name.trim(),
+        wa_number: wa,
+        block: normalizeBlock(input.block),
+        house_no: input.houseNo.trim(),
+        rt: normalizeRt(input.rt ?? ''),
+        invite_code: input.inviteCode,
+      },
     },
   })
   if (error) throw new AuthError(friendly(error.message))

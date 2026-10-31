@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../auth/AuthContext'
 import { compressImage } from '../../lib/image'
+import { formatAddress } from '../../lib/address'
 import { Button, Card, Field, Notice, Spinner, Toggle, inputCls } from '../../components/ui'
 import { saveStore, uploadImage } from './api'
 import { keys, useCategories, useMyStore } from './hooks'
@@ -29,7 +30,7 @@ function CategorySelect({ categories, value, onChange }: { categories: Category[
 function StoreForm({ store, profile, categories }: { store: Store | null; profile: Profile; categories: Category[] }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const [v, setV] = useState<StoreFormValues>(() => storeToForm(store, { wa: profile.wa_number, blockInfo: `Blok ${profile.block}` }))
+  const [v, setV] = useState<StoreFormValues>(() => storeToForm(store, { wa: profile.wa_number, blockInfo: formatAddress(profile) }))
   const [errors, setErrors] = useState<Errors<StoreFormValues>>({})
   const [uploading, setUploading] = useState(false)
   const [serverError, setServerError] = useState('')

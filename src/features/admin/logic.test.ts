@@ -12,10 +12,10 @@ describe('admin logic', () => {
     expect(parseBlocks('  ')).toEqual([])
   })
   it('validateSettings', () => {
-    const ok = { invite_code: 'MDA-ABCDEFGH', valid_blocks: 'A,B', admin_wa_number: '0812 3456 7890' }
+    const ok = { invite_code: 'MDA-ABCDEFGH', block_suggestions: 'A,B', admin_wa_number: '0812 3456 7890' }
     expect(validateSettings(ok, normalizePhone)).toEqual({})
     expect(validateSettings({ ...ok, invite_code: 'abc' }, normalizePhone).invite_code).toBeTruthy()
-    expect(validateSettings({ ...ok, valid_blocks: '' }, normalizePhone).valid_blocks).toBeTruthy()
+    expect(validateSettings({ ...ok, block_suggestions: '' }, normalizePhone)).toEqual({})
     expect(validateSettings({ ...ok, admin_wa_number: '123' }, normalizePhone).admin_wa_number).toBeTruthy()
     expect(validateSettings({ ...ok, admin_wa_number: '' }, normalizePhone)).toEqual({})
   })

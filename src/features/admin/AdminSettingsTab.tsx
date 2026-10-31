@@ -10,7 +10,7 @@ import CategoryManager from './CategoryManager'
 function SettingsForm({ s }: { s: CommunitySettings }) {
   const qc = useQueryClient()
   const [code, setCode] = useState(s.invite_code)
-  const [blocks, setBlocks] = useState(s.valid_blocks.join(', '))
+  const [blocks, setBlocks] = useState(s.block_suggestions.join(', '))
   const [wa, setWa] = useState(s.admin_wa_number ?? '')
   const [open, setOpen] = useState(s.registration_open)
   const [residency, setResidency] = useState(s.require_seller_residency)
@@ -21,7 +21,7 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
     mutationFn: () =>
       saveSettings({
         invite_code: code.trim(),
-        valid_blocks: parseBlocks(blocks),
+        block_suggestions: parseBlocks(blocks),
         admin_wa_number: wa.trim() ? normalizePhone(wa) : null,
         registration_open: open,
         require_seller_residency: residency,
@@ -32,7 +32,7 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
 
   function submit(e: React.FormEvent) {
     e.preventDefault()
-    const errs = validateSettings({ invite_code: code, valid_blocks: blocks, admin_wa_number: wa }, normalizePhone)
+    const errs = validateSettings({ invite_code: code, block_suggestions: blocks, admin_wa_number: wa }, normalizePhone)
     setErrors(errs)
     if (Object.keys(errs).length === 0) save.mutate()
   }
@@ -51,7 +51,9 @@ function SettingsForm({ s }: { s: CommunitySettings }) {
           <div><p className="font-semibold">Pendaftaran baru</p><p className="text-xs text-tinta-lembut">Kalau ditutup, kode undangan ditolak.</p></div>
           <Toggle pressed={open} onClick={() => setOpen(!open)}>{open ? 'Dibuka' : 'Ditutup'}</Toggle>
         </div>
-        <Field label="Blok yang valid" error={errors.valid_blocks} hint="Pisahkan dengan koma. Contoh: A, B, C"><input className={inputCls} value={blocks} onChange={(e) => setBlocks(e.target.value)} /></Field>
+        <Field label="Saran nama blok" hint="Hanya saran yang muncul di form, warga bebas mengetik blok lain. Contoh: A, C3, NP4">
+          <input className={inputCls} value={blocks} onChange={(e) => setBlocks(e.target.value)} />
+        </Field>
       </Card>
       <Card>
         <p className="font-bold">Penjual</p>

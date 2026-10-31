@@ -56,7 +56,7 @@ describe('history', () => {
 })
 
 describe('buildCartMessage', () => {
-  const input = { items: [{ name: 'Nasi', qty: 1, price: 10000 }], payment: 'cash' as const, address: { name: 'Syifa', block: 'C', houseNo: '12' } }
+  const input = { items: [{ name: 'Nasi', qty: 1, price: 10000 }], payment: 'cash' as const, address: { name: 'Syifa', block: 'C', house_no: '12' } }
   it('antar: memakai baris alamat', () => expect(buildCartMessage(input, 'antar')).toContain('Antar ke: Blok C No. 12 (a.n. Syifa)'))
   it('ambil: mengganti baris alamat', () => {
     const m = buildCartMessage(input, 'ambil')

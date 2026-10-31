@@ -60,7 +60,7 @@ export function RegisterPage() {
   const { session } = useAuth()
   const navigate = useNavigate()
   const { data: settings } = usePublicSettings()
-  const [f, setF] = useState({ name: '', wa: '', block: '', houseNo: '', inviteCode: '', pin: '', pin2: '' })
+  const [f, setF] = useState({ name: '', wa: '', block: '', houseNo: '', rt: '', inviteCode: '', pin: '', pin2: '' })
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   if (session) return <Navigate to="/" replace />
@@ -70,7 +70,7 @@ export function RegisterPage() {
     e.preventDefault()
     setError('')
     if (f.name.trim().length < 2) return setError('Isi nama lengkap.')
-    if (!f.block || !f.houseNo.trim()) return setError('Isi blok dan nomor rumah.')
+    if (!f.block.trim() || !f.houseNo.trim()) return setError('Isi blok dan nomor rumah.')
     if (f.pin !== f.pin2) return setError('PIN dan ulangi PIN tidak sama.')
     setBusy(true)
     try {
@@ -89,15 +89,16 @@ export function RegisterPage() {
         <Field label="Nama lengkap"><input className={inputCls} autoComplete="name" value={f.name} onChange={set('name')} /></Field>
         <Field label="Nomor WhatsApp"><input className={inputCls} inputMode="tel" autoComplete="tel" value={f.wa} onChange={set('wa')} placeholder="0812 3456 7890" /></Field>
         <div className="flex gap-3">
-          <div className="w-28">
-            <Field label="Blok">
-              <select className={inputCls} value={f.block} onChange={set('block')}>
-                <option value="">Pilih</option>
-                {(settings?.valid_blocks ?? []).map((b) => <option key={b}>{b}</option>)}
-              </select>
+          <div className="w-24">
+            <Field label="Blok" hint="mis. C3">
+              <input className={inputCls} list="saran-blok-daftar" placeholder="C3" value={f.block} onChange={set('block')} />
+              <datalist id="saran-blok-daftar">
+                {(settings?.block_suggestions ?? []).map((b) => <option key={b} value={b} />)}
+              </datalist>
             </Field>
           </div>
           <div className="flex-1"><Field label="No. rumah"><input className={inputCls} value={f.houseNo} onChange={set('houseNo')} /></Field></div>
+          <div className="w-24"><Field label="RT" hint="Opsional"><input className={inputCls} placeholder="RT 15" value={f.rt} onChange={set('rt')} /></Field></div>
         </div>
         <Field label="Kode undangan" hint="Ada di grup WhatsApp Mall Dian Anyar."><input className={inputCls} autoCapitalize="characters" value={f.inviteCode} onChange={set('inviteCode')} /></Field>
         <Field label="Buat PIN (6 angka)"><input className={inputCls} type="password" inputMode="numeric" maxLength={6} autoComplete="new-password" value={f.pin} onChange={set('pin')} /></Field>

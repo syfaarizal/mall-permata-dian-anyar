@@ -7,7 +7,7 @@ const btn = 'min-h-12 rounded-xl bg-marun-700 px-4 font-bold text-emas-300 disab
 /** Halaman uji sementara (spike): membuktikan alur daftar/masuk nomor + PIN jalan di Supabase. Hapus di tahap 3. */
 export default function AuthSpike() {
   const [mode, setMode] = useState<'daftar' | 'masuk'>('daftar')
-  const [f, setF] = useState({ name: '', wa: '', block: 'C', houseNo: '', inviteCode: '', pin: '' })
+  const [f, setF] = useState({ name: '', wa: '', block: 'C', houseNo: '', rt: '', inviteCode: '', pin: '' })
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const set = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement>) => setF({ ...f, [k]: e.target.value })
@@ -42,6 +42,7 @@ export default function AuthSpike() {
           <div className="flex gap-2">
             <input className={`${field} w-24`} placeholder="Blok" value={f.block} onChange={set('block')} />
             <input className={`${field} flex-1`} placeholder="No. rumah" value={f.houseNo} onChange={set('houseNo')} />
+            <input className={`${field} w-24`} placeholder="RT 15" value={f.rt} onChange={set('rt')} />
           </div>
           <input className={field} placeholder="Kode undangan" value={f.inviteCode} onChange={set('inviteCode')} />
         </>

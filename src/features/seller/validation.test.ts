@@ -64,6 +64,6 @@ describe('helper', () => {
     expect(parseRupiahInput('')).toBeNull()
   })
   it('pesan verifikasi penjual', () => {
-    expect(buildSellerVerifyMessage({ storeName: 'Warung X', name: 'Syifa', block: 'C', houseNo: '12', waNumber: '628123' })).toContain('Toko: Warung X')
+    expect(buildSellerVerifyMessage({ storeName: 'Warung X', name: 'Syifa', block: 'C3', house_no: '12', rt: 'RT 15', waNumber: '628123' })).toContain('Blok C3 No. 12 RT 15')
   })
 })

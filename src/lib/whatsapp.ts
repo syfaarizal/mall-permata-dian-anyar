@@ -1,4 +1,5 @@
 import { formatRupiah } from './format'
+import { formatAddress } from './address'
 
 export interface OrderItem {
   name: string
@@ -10,7 +11,7 @@ export interface OrderInput {
   items: OrderItem[]
   note?: string
   payment: 'qris' | 'cash'
-  address: { name: string; block: string; houseNo: string }
+  address: { name: string; block: string; house_no: string; rt?: string | null }
 }
 
 export const orderTotal = (items: OrderItem[]) => items.reduce((sum, i) => sum + i.price * i.qty, 0)
@@ -22,7 +23,7 @@ export function buildOrderMessage(o: OrderInput): string {
   lines.push(
     `Total: ${formatRupiah(orderTotal(o.items))}`,
     `Bayar: ${o.payment === 'qris' ? 'QRIS' : 'Cash'}`,
-    `Antar ke: Blok ${o.address.block} No. ${o.address.houseNo} (a.n. ${o.address.name})`,
+    `Antar ke: ${formatAddress(o.address)} (a.n. ${o.address.name})`,
   )
   return lines.join('\n')
 }
@@ -31,12 +32,12 @@ export const buildWaLink = (waNumber: string, text: string) =>
   `https://wa.me/${waNumber}?text=${encodeURIComponent(text)}`
 
 /** Pesan konfirmasi penjual ke admin (verifikasi nomor + alamat rumah). */
-export function buildSellerVerifyMessage(i: { storeName: string; name: string; block: string; houseNo: string; waNumber: string }): string {
+export function buildSellerVerifyMessage(i: { storeName: string; name: string; block: string; house_no: string; rt?: string | null; waNumber: string }): string {
   return [
     'Mau buka toko di Mall Dian Anyar',
     `Toko: ${i.storeName}`,
     `Penjual: ${i.name}`,
-    `Blok ${i.block} No. ${i.houseNo}`,
+    formatAddress(i),
     `Nomor: ${i.waNumber}`,
   ].join('\n')
 }
